@@ -23,12 +23,12 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler;
+package org.jraf.irondad.handler;
 
 import java.util.List;
 
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
 
 public interface Handler {
     /**

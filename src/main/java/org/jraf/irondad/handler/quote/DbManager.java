@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler.quote;
+package org.jraf.irondad.handler.quote;
 
 import java.io.File;
 import java.sql.Connection;
@@ -36,9 +36,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 
-import org.jraf.irondad.lib.Config;
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.util.Log;
+import org.jraf.irondad.Config;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.util.Log;
 
 public class DbManager {
     private static final String TAG = Constants.TAG + DbManager.class.getSimpleName();

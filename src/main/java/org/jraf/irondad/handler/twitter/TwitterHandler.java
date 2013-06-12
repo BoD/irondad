@@ -23,35 +23,38 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler.mtgox;
+package org.jraf.irondad.handler.twitter;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.handler.Handler;
-import org.jraf.irondad.lib.protocol.ClientConfig;
-import org.jraf.irondad.lib.protocol.Command;
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
-import org.jraf.irondad.lib.util.Log;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class MtgoxHandler implements Handler {
-    private static final String TAG = Constants.TAG + MtgoxHandler.class.getSimpleName();
+public class TwitterHandler implements Handler {
+    private static final String TAG = Constants.TAG + TwitterHandler.class.getSimpleName();
 
-    private static final String COMMAND = "!btc";
-    private static final String URL_API = "https://data.mtgox.com/api/2/BTCUSD/money/ticker";
+    private static final Pattern PATTERN_TWEET_ID = Pattern.compile("(.*twitter\\.com.*status/)([0-9]+)[^0-9]*.*", Pattern.CASE_INSENSITIVE);
+    private static final int PATTERN_TWEET_ID_GROUP = 2;
+    private static final String URL_API_TWEET = "https://api.twitter.com/1/statuses/show/%s.json";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    public MtgoxHandler(ClientConfig clientConfig) {}
+    public TwitterHandler(ClientConfig clientConfig) {}
 
     @Override
     public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String textAsList, List<String> textList,
@@ -60,30 +63,22 @@ public class MtgoxHandler implements Handler {
             // Ignore private messages
             return false;
         }
-        if (!textAsList.startsWith(COMMAND)) return false;
-
-        // Special case for djis
-        if ("djis".equalsIgnoreCase(fromNickname)) {
-            connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 99 + 100));
-            return true;
+        final String tweetId = getTweetId(textAsList);
+        if (tweetId == null) {
+            // Text doesn't contain a twitter link: ignore
+            return false;
         }
-
         mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
+                String uri = String.format(URL_API_TWEET, tweetId);
                 try {
-                    String jsonStr = HttpRequest.get(URL_API).body();
-                    if (jsonStr == null || jsonStr.length() == 0) {
-                        // Try again once, sometimes we get an empty string
-                        jsonStr = HttpRequest.get(URL_API).body();
-                    }
+                    String jsonStr = HttpRequest.get(uri).body();
                     JSONObject mainObject = new JSONObject(jsonStr);
-                    JSONObject dataObject = mainObject.getJSONObject("data");
-                    JSONObject lastObject = dataObject.getJSONObject("last");
-                    String displayText = lastObject.getString("display");
-                    connection.send(Command.PRIVMSG, channel, displayText);
+                    String tweetText = mainObject.getString("text");
+                    connection.send(Command.PRIVMSG, channel, tweetText);
                 } catch (HttpRequestException e) {
-                    Log.w(TAG, "handleMessage Could not get " + URL_API, e);
+                    Log.w(TAG, "handleMessage Could not get " + uri, e);
                 } catch (JSONException e) {
                     Log.w(TAG, "handleMessage Could not parse json", e);
                 } catch (IOException e) {
@@ -92,5 +87,11 @@ public class MtgoxHandler implements Handler {
             }
         });
         return true;
+    }
+
+    private static String getTweetId(String text) {
+        Matcher matcher = PATTERN_TWEET_ID.matcher(text);
+        if (!matcher.matches()) return null;
+        return matcher.group(PATTERN_TWEET_ID_GROUP);
     }
 }

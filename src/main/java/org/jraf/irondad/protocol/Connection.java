@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.protocol;
+package org.jraf.irondad.protocol;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,9 +32,9 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.List;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.util.Log;
-import org.jraf.irondad.lib.util.StringUtil;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.util.Log;
+import org.jraf.irondad.util.StringUtil;
 
 public class Connection {
     private static final String TAG = Constants.TAG + Connection.class.getSimpleName();

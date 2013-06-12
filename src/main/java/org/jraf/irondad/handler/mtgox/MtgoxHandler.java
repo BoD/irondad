@@ -23,39 +23,35 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler.youtube;
+package org.jraf.irondad.handler.mtgox;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.handler.Handler;
-import org.jraf.irondad.lib.protocol.ClientConfig;
-import org.jraf.irondad.lib.protocol.Command;
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
-import org.jraf.irondad.lib.util.Log;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class YoutubeHandler implements Handler {
-    private static final String TAG = Constants.TAG + YoutubeHandler.class.getSimpleName();
+public class MtgoxHandler implements Handler {
+    private static final String TAG = Constants.TAG + MtgoxHandler.class.getSimpleName();
 
-    private static final Pattern PATTERN_VIDEO_ID = Pattern.compile("((.*youtube\\.com.*v=)|(.*youtu\\.be/))([a-zA-Z0-9_\\-]+)[^a-zA-Z0-9_\\-]*.*",
-            Pattern.CASE_INSENSITIVE);
-    private static final int PATTERN_VIDEO_ID_GROUP = 4;
-    private static final String URL_API_VIDEO = "http://gdata.youtube.com/feeds/api/videos/%s?alt=json&prettyprint=true";
+    private static final String COMMAND = "!btc";
+    private static final String URL_API = "https://data.mtgox.com/api/2/BTCUSD/money/ticker";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    public YoutubeHandler(ClientConfig clientConfig) {}
+    public MtgoxHandler(ClientConfig clientConfig) {}
 
     @Override
     public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String textAsList, List<String> textList,
@@ -64,24 +60,30 @@ public class YoutubeHandler implements Handler {
             // Ignore private messages
             return false;
         }
-        final String videoId = getVideoId(textAsList);
-        if (videoId == null) {
-            // Text doesn't contain a youtube link: ignore
-            return false;
+        if (!textAsList.startsWith(COMMAND)) return false;
+
+        // Special case for djis
+        if ("djis".equalsIgnoreCase(fromNickname)) {
+            connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 99 + 100));
+            return true;
         }
+
         mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
-                String uri = String.format(URL_API_VIDEO, videoId);
                 try {
-                    String jsonStr = HttpRequest.get(uri).body();
+                    String jsonStr = HttpRequest.get(URL_API).body();
+                    if (jsonStr == null || jsonStr.length() == 0) {
+                        // Try again once, sometimes we get an empty string
+                        jsonStr = HttpRequest.get(URL_API).body();
+                    }
                     JSONObject mainObject = new JSONObject(jsonStr);
-                    JSONObject entryObject = mainObject.getJSONObject("entry");
-                    JSONObject titleObject = entryObject.getJSONObject("title");
-                    String title = titleObject.getString("$t");
-                    connection.send(Command.PRIVMSG, channel, title);
+                    JSONObject dataObject = mainObject.getJSONObject("data");
+                    JSONObject lastObject = dataObject.getJSONObject("last");
+                    String displayText = lastObject.getString("display");
+                    connection.send(Command.PRIVMSG, channel, displayText);
                 } catch (HttpRequestException e) {
-                    Log.w(TAG, "handleMessage Could not get " + uri, e);
+                    Log.w(TAG, "handleMessage Could not get " + URL_API, e);
                 } catch (JSONException e) {
                     Log.w(TAG, "handleMessage Could not parse json", e);
                 } catch (IOException e) {
@@ -90,11 +92,5 @@ public class YoutubeHandler implements Handler {
             }
         });
         return true;
-    }
-
-    private static String getVideoId(String text) {
-        Matcher matcher = PATTERN_VIDEO_ID.matcher(text);
-        if (!matcher.matches()) return null;
-        return matcher.group(PATTERN_VIDEO_ID_GROUP);
     }
 }

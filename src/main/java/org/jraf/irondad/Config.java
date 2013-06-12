@@ -23,36 +23,10 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.util;
+package org.jraf.irondad;
 
-public class StringUtil {
-    /**
-     * Returns whether the given string contains only digits.
-     */
-    public static boolean isDigitsOnly(String s) {
-        int len = s.length();
-        for (int i = 0; i < len; i++) {
-            if (!Character.isDigit(s.charAt(i))) {
-                return false;
-            }
-        }
-        return true;
-    }
+public class Config {
 
-    /**
-     * Returns a string containing given the tokens joined by the given delimiters.
-     */
-    public static String join(String delimiter, Object[] tokens) {
-        StringBuilder res = new StringBuilder();
-        boolean first = true;
-        for (Object token : tokens) {
-            if (!first) {
-                res.append(delimiter);
-            } else {
-                first = false;
-            }
-            res.append(token);
-        }
-        return res.toString();
-    }
+    public static final boolean LOGD = true;
+
 }

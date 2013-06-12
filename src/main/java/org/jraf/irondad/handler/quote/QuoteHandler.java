@@ -23,19 +23,19 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler.quote;
+package org.jraf.irondad.handler.quote;
 
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.handler.Handler;
-import org.jraf.irondad.lib.handler.quote.DbManager.Quote;
-import org.jraf.irondad.lib.protocol.ClientConfig;
-import org.jraf.irondad.lib.protocol.Command;
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.quote.DbManager.Quote;
+import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
 
 public class QuoteHandler implements Handler {
     private static final String TAG = Constants.TAG + QuoteHandler.class.getSimpleName();

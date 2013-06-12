@@ -23,17 +23,17 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler.helloworld;
+package org.jraf.irondad.handler.helloworld;
 
 import java.util.List;
 import java.util.Locale;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.handler.Handler;
-import org.jraf.irondad.lib.protocol.ClientConfig;
-import org.jraf.irondad.lib.protocol.Command;
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
 
 public class HelloWorldHandler implements Handler {
     private static final String TAG = Constants.TAG + HelloWorldHandler.class.getSimpleName();

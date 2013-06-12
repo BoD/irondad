@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib;
+package org.jraf.irondad;
 
 public class Constants {
     public static final String TAG = "irondad/";

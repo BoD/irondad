@@ -23,23 +23,23 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.lib.handler;
+package org.jraf.irondad.handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.jraf.irondad.lib.Constants;
-import org.jraf.irondad.lib.handler.control.ControlHandler;
-import org.jraf.irondad.lib.handler.helloworld.HelloWorldHandler;
-import org.jraf.irondad.lib.handler.mtgox.MtgoxHandler;
-import org.jraf.irondad.lib.handler.quote.QuoteHandler;
-import org.jraf.irondad.lib.handler.twitter.TwitterHandler;
-import org.jraf.irondad.lib.handler.youtube.YoutubeHandler;
-import org.jraf.irondad.lib.protocol.ClientConfig;
-import org.jraf.irondad.lib.protocol.Connection;
-import org.jraf.irondad.lib.protocol.Message;
-import org.jraf.irondad.lib.util.Log;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.control.ControlHandler;
+import org.jraf.irondad.handler.helloworld.HelloWorldHandler;
+import org.jraf.irondad.handler.mtgox.MtgoxHandler;
+import org.jraf.irondad.handler.quote.QuoteHandler;
+import org.jraf.irondad.handler.twitter.TwitterHandler;
+import org.jraf.irondad.handler.youtube.YoutubeHandler;
+import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
 
 public class HandlerManager {
     private static final String TAG = Constants.TAG + HandlerManager.class.getSimpleName();
