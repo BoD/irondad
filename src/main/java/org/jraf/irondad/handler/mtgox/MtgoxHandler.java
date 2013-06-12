@@ -54,13 +54,13 @@ public class MtgoxHandler implements Handler {
     public MtgoxHandler(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String textAsList, List<String> textList,
+    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message) throws Exception {
         if (channel == null) {
             // Ignore private messages
             return false;
         }
-        if (!textAsList.startsWith(COMMAND)) return false;
+        if (!text.startsWith(COMMAND)) return false;
 
         // Special case for djis
         if ("djis".equalsIgnoreCase(fromNickname)) {

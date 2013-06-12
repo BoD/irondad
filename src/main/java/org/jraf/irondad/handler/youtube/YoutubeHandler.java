@@ -58,13 +58,13 @@ public class YoutubeHandler implements Handler {
     public YoutubeHandler(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String textAsList, List<String> textList,
+    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message) throws Exception {
         if (channel == null) {
             // Ignore private messages
             return false;
         }
-        final String videoId = getVideoId(textAsList);
+        final String videoId = getVideoId(text);
         if (videoId == null) {
             // Text doesn't contain a youtube link: ignore
             return false;

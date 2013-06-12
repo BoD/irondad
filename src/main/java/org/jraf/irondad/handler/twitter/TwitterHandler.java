@@ -57,13 +57,13 @@ public class TwitterHandler implements Handler {
     public TwitterHandler(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String textAsList, List<String> textList,
+    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message) throws Exception {
         if (channel == null) {
             // Ignore private messages
             return false;
         }
-        final String tweetId = getTweetId(textAsList);
+        final String tweetId = getTweetId(text);
         if (tweetId == null) {
             // Text doesn't contain a twitter link: ignore
             return false;
