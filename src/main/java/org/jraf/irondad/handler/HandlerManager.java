@@ -33,6 +33,7 @@ import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.control.ControlHandler;
 import org.jraf.irondad.handler.helloworld.HelloWorldHandler;
 import org.jraf.irondad.handler.mtgox.MtgoxHandler;
+import org.jraf.irondad.handler.pixgame.PixGameHandler;
 import org.jraf.irondad.handler.quote.QuoteHandler;
 import org.jraf.irondad.handler.twitter.TwitterHandler;
 import org.jraf.irondad.handler.youtube.YoutubeHandler;
@@ -59,6 +60,8 @@ public class HandlerManager {
         mHandlerRegistry.add(new HelloWorldHandler(clientConfig));
         mHandlerRegistry.add(new MtgoxHandler(clientConfig));
         mHandlerRegistry.add(new QuoteHandler(clientConfig));
+
+        mHandlerRegistry.add(new PixGameHandler(clientConfig));
     }
 
     public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {

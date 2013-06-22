@@ -27,7 +27,7 @@ package org.jraf.irondad.protocol;
 
 import java.util.HashMap;
 
-import org.jraf.irondad.util.StringUtil;
+import org.apache.commons.lang3.StringUtils;
 
 public enum Command {
     //@formatter:off
@@ -86,7 +86,7 @@ public enum Command {
     }
 
     public static Command from(String commandStr) {
-        if (StringUtil.isDigitsOnly(commandStr)) {
+        if (StringUtils.isNumeric(commandStr)) {
             // Reply (numeric command)
             return from(Integer.valueOf(commandStr));
         }

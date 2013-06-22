@@ -32,9 +32,9 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.util.Log;
-import org.jraf.irondad.util.StringUtil;
 
 public class Connection {
     private static final String TAG = Constants.TAG + Connection.class.getSimpleName();
@@ -62,7 +62,7 @@ public class Connection {
             if (paramsCopy[paramsCopy.length - 1].contains(" ")) {
                 paramsCopy[paramsCopy.length - 1] = ":" + paramsCopy[paramsCopy.length - 1];
             }
-            send(command.name() + " " + StringUtil.join(" ", paramsCopy));
+            send(command.name() + " " + StringUtils.join(paramsCopy, " "));
         } else {
             send(command.name());
         }
