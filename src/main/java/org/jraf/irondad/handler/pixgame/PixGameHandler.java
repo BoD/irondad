@@ -26,6 +26,7 @@
 package org.jraf.irondad.handler.pixgame;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.List;
 import java.util.Locale;
 
@@ -52,9 +53,12 @@ public class PixGameHandler implements Handler {
 
     private static final String APPLICATION_NAME = "BoD-irondad/1.0";
     private static final String COMMAND = "!pix";
+    private static final String RANDOM = "random";
     private static final String PREFIX = PixGameHandler.class.getName() + ".";
     public static final String CONFIG_KEY = PREFIX + "KEY";
     public static final String CONFIG_CX = PREFIX + "CX";
+    public static final String CONFIG_PATH_DICT = PREFIX + "PATH_DICT";
+
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 10;
     private static final int GUESSES_FIRST_HINT = 15;
@@ -64,6 +68,7 @@ public class PixGameHandler implements Handler {
     private static final String URL_HIDE = "http://lubek.b.free.fr/a.html?a=";
 
     private String mCx;
+    private String mDictPath;
     private Customsearch mCustomSearch;
     private String mSearchTerms;
     private String mGameCreatedBy;
@@ -72,6 +77,7 @@ public class PixGameHandler implements Handler {
     private List<Result> mSearchResults;
 
     public PixGameHandler(ClientConfig clientConfig) {
+        mDictPath = clientConfig.getExtraConfig(CONFIG_PATH_DICT);
         Customsearch.Builder customSearchBuilder;
         try {
             customSearchBuilder = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, null);
@@ -102,7 +108,7 @@ public class PixGameHandler implements Handler {
 
     private void handlePrivateMessage(Connection connection, String fromNickname, String text, List<String> textAsList) throws IOException {
         if (textAsList.size() < 2) {
-            connection.send(Command.PRIVMSG, fromNickname, "Syntax: !pix <search terms>");
+            connection.send(Command.PRIVMSG, fromNickname, "Syntax: \"!pix <search terms>\" or \"!pix random\" to use a random word.");
             return;
         }
         if (isGameOngoing()) {
@@ -117,7 +123,8 @@ public class PixGameHandler implements Handler {
     private void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
             throws IOException {
         if (!isGameOngoing()) {
-            connection.send(Command.PRIVMSG, channel, fromNickname + ": No game is currently ongoing.  Privmsg me \"!pix <search terms>\" to start one.");
+            connection.send(Command.PRIVMSG, channel, fromNickname
+                    + ": No game is currently ongoing.  Privmsg me \"!pix <search terms>\" or \"!pix random\" to start one.");
             return;
         }
         if (text.trim().equals(COMMAND)) {
@@ -134,7 +141,10 @@ public class PixGameHandler implements Handler {
     }
 
     private void newGame(Connection connection, String fromNickname, String searchTerms) throws IOException {
-        if (!StringUtils.isAlphanumericSpace(searchTerms)) {
+        boolean isRandom = RANDOM.equalsIgnoreCase(searchTerms);
+        if (isRandom) {
+            searchTerms = getRandomWord();
+        } else if (!StringUtils.isAlphanumericSpace(searchTerms)) {
             connection.send(Command.PRIVMSG, fromNickname, "No punctuation allowed in the search terms.  Try another one.");
             return;
         }
@@ -152,8 +162,12 @@ public class PixGameHandler implements Handler {
         }
         mSearchTerms = searchTerms;
         mGameCreatedBy = fromNickname;
-        connection.send(Command.PRIVMSG, fromNickname, "New game started with the search \"" + searchTerms + "\".");
 
+        if (isRandom) {
+            connection.send(Command.PRIVMSG, fromNickname, "New game started with a random word search.");
+        } else {
+            connection.send(Command.PRIVMSG, fromNickname, "New game started with the search \"" + searchTerms + "\".");
+        }
     }
 
     private long queryGoogle(Connection connection, String searchTerms) throws IOException {
@@ -284,5 +298,14 @@ public class PixGameHandler implements Handler {
             }
         }
         return res.toString();
+    }
+
+    public String getRandomWord() throws IOException {
+        RandomAccessFile file = new RandomAccessFile(mDictPath, "r");
+        file.seek((long) (Math.random() * file.length()));
+        // Eat the characters of the current line to go to beginning of the next line
+        file.readLine();
+        // Now read and return the line
+        return file.readLine();
     }
 }

@@ -5,6 +5,7 @@
     <groupId>org.jraf</groupId>
     <artifactId>irondad</artifactId>
     <version>0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
     <name>irondad</name>
     <description>A very simple IRC client library written in Java.</description>
 
