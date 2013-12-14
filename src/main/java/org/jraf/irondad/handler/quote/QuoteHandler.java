@@ -47,7 +47,8 @@ public class QuoteHandler implements Handler {
 
     private DbManager mDbManager;
 
-    public QuoteHandler(ClientConfig clientConfig) {
+    @Override
+    public void init(ClientConfig clientConfig) {
         mDbManager = new DbManager(clientConfig.getExtraConfig(CONFIG_PATH_DB));
     }
 

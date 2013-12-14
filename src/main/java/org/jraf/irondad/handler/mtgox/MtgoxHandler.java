@@ -51,7 +51,8 @@ public class MtgoxHandler implements Handler {
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    public MtgoxHandler(ClientConfig clientConfig) {}
+    @Override
+    public void init(ClientConfig clientConfig) {}
 
     @Override
     public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,

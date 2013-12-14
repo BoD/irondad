@@ -76,7 +76,8 @@ public class PixGameHandler implements Handler {
     private long mSearchResultCount;
     private List<Result> mSearchResults;
 
-    public PixGameHandler(ClientConfig clientConfig) {
+    @Override
+    public void init(ClientConfig clientConfig) {
         mDictPath = clientConfig.getExtraConfig(CONFIG_PATH_DICT);
         Customsearch.Builder customSearchBuilder;
         try {

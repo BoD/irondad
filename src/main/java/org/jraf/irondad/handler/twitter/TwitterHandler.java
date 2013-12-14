@@ -54,7 +54,8 @@ public class TwitterHandler implements Handler {
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    public TwitterHandler(ClientConfig clientConfig) {}
+    @Override
+    public void init(ClientConfig clientConfig) {}
 
     @Override
     public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,

@@ -25,23 +25,36 @@
  */
 package org.jraf.irondad.protocol;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import org.jraf.irondad.handler.Handler;
 
 public class ClientConfig {
     private final String mHost;
     private final int mPort;
-    private final String[] mChannels;
     private final String mNickname;
     private final String mAdminPassword;
+    private List<Class<? extends Handler>> mPrivmsgHandlers;
+    private final Map<String, List<Class<? extends Handler>>> mChannelHandlers;
     private final Map<String, String> mExtraConfig;
 
-    public ClientConfig(String host, int port, String[] channels, String nickname, String adminPassword) {
+
+    @SuppressWarnings({ "unchecked" })
+    public ClientConfig(String host, int port, String nickname, String adminPassword, List<Class<? extends Handler>> privmsgHandlers,
+            HashMap<String, List<Class<? extends Handler>>> channelHandlers) {
         mHost = host;
         mPort = port;
-        mChannels = channels;
         mNickname = nickname;
         mAdminPassword = adminPassword;
+        mPrivmsgHandlers = new ArrayList<Class<? extends Handler>>();
+        mPrivmsgHandlers.addAll(privmsgHandlers);
+        mChannelHandlers = (HashMap<String, List<Class<? extends Handler>>>) channelHandlers.clone();
+
         mExtraConfig = new HashMap<String, String>();
     }
 
@@ -53,8 +66,8 @@ public class ClientConfig {
         return mPort;
     }
 
-    public String[] getChannels() {
-        return mChannels;
+    public Set<String> getChannels() {
+        return Collections.unmodifiableSet(mChannelHandlers.keySet());
     }
 
     public String getNickname() {
@@ -71,5 +84,13 @@ public class ClientConfig {
 
     public String getExtraConfig(String key) {
         return mExtraConfig.get(key);
+    }
+
+    public List<Class<? extends Handler>> getPrivmsgHandlers() {
+        return Collections.unmodifiableList(mPrivmsgHandlers);
+    }
+
+    public List<Class<? extends Handler>> getHandlers(String channel) {
+        return Collections.unmodifiableList(mChannelHandlers.get(channel));
     }
 }

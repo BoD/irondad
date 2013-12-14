@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jraf</groupId>
     <artifactId>irondad</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
     <name>irondad</name>
     <description>A very simple IRC client library written in Java.</description>
@@ -14,31 +13,31 @@
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
-            <version>3.7.2</version>
+            <version>3.7.15-M1</version>
         </dependency>
 
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20090211</version>
+            <version>20131018</version>
         </dependency>
 
         <dependency>
             <groupId>com.github.kevinsawicki</groupId>
             <artifactId>http-request</artifactId>
-            <version>5.2</version>
+            <version>5.5</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-customsearch</artifactId>
-            <version>v1-rev18-1.15.0-rc</version>
+            <version>v1-rev31-1.17.0-rc</version>
         </dependency>
 
         <dependency>
             <groupId>com.google.http-client</groupId>
             <artifactId>google-http-client-jackson2</artifactId>
-            <version>1.15.0-rc</version>
+            <version>1.17.0-rc</version>
         </dependency>
 
         <dependency>
@@ -58,6 +57,13 @@
                     <source>1.6</source>
                     <target>1.6</target>
                 </configuration>
+            </plugin>
+
+            <!-- Use mvn versions:display-dependency-updates to show new versions of dependencies, or mvn versions:use-latest-versions to update the pom. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>2.1</version>
             </plugin>
 
             <!-- Use mvn package to generate the jar -->

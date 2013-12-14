@@ -27,10 +27,18 @@ package org.jraf.irondad.handler;
 
 import java.util.List;
 
+import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
 public interface Handler {
+    /**
+     * Initialize this Handler.
+     * 
+     * @param clientConfig The client config.
+     */
+    void init(ClientConfig clientConfig) throws Exception;
+
     /**
      * @param channel If not {@code null}, the channel on which the message was sent. If {@code null}, this call is a private message.
      */

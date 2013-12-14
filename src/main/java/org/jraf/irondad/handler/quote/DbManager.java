@@ -121,7 +121,7 @@ public class DbManager {
 
         if (isExistingQuote(channel, text)) return ERR_QUOTE_ALREADY_EXISTS;
 
-        PreparedStatement statement;
+        PreparedStatement statement = null;
         try {
             statement = mConnection.prepareStatement(SQL_INSERT, Statement.RETURN_GENERATED_KEYS);
             statement.setString(1, channel);
@@ -141,13 +141,19 @@ public class DbManager {
             }
         } catch (SQLException e) {
             Log.e(TAG, "insert Could not insert", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "isExistingQuote", e);
+            }
         }
         return ERR_SQL_PROBLEM;
     }
 
     private int getCount(String channel) {
         if (Config.LOGD) Log.d(TAG, "getCount channel=" + channel);
-        PreparedStatement statement;
+        PreparedStatement statement = null;
         try {
             statement = mConnection.prepareStatement(SQL_COUNT);
             statement.setString(1, channel);
@@ -158,13 +164,19 @@ public class DbManager {
             return res;
         } catch (SQLException e) {
             Log.e(TAG, "Could not get a random quote", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "isExistingQuote", e);
+            }
         }
         return 0;
     }
 
     private boolean isExistingQuote(String channel, String text) {
         if (Config.LOGD) Log.d(TAG, "isExistingQuote");
-        PreparedStatement statement;
+        PreparedStatement statement = null;
         try {
             statement = mConnection.prepareStatement(SQL_CHECK_QUOTE_EXISTS);
             statement.setString(1, channel);
@@ -176,6 +188,12 @@ public class DbManager {
             return count > 0;
         } catch (SQLException e) {
             Log.e(TAG, "Could not check if quote exists", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "isExistingQuote", e);
+            }
         }
         return false;
     }
@@ -197,7 +215,7 @@ public class DbManager {
 
         int count = getCount(channel);
         if (count == 0) return null;
-        PreparedStatement statement;
+        PreparedStatement statement = null;
         try {
             statement = mConnection.prepareStatement(SQL_SELECT_ALL);
             statement.setString(1, channel);
@@ -215,6 +233,12 @@ public class DbManager {
             return res;
         } catch (SQLException e) {
             Log.e(TAG, "Could not get a random quote", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "isExistingQuote", e);
+            }
         }
         return null;
     }
@@ -222,7 +246,7 @@ public class DbManager {
     public int delete(long id) {
         if (Config.LOGD) Log.d(TAG, "delete id=" + id);
 
-        PreparedStatement statement;
+        PreparedStatement statement = null;
         try {
             statement = mConnection.prepareStatement(SQL_DELETE);
             statement.setLong(1, id);
@@ -233,6 +257,12 @@ public class DbManager {
             return rows;
         } catch (SQLException e) {
             Log.e(TAG, "insert Could not insert", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "isExistingQuote", e);
+            }
         }
         return ERR_SQL_PROBLEM;
     }

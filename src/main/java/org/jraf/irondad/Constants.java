@@ -30,5 +30,5 @@ public class Constants {
 
     public static final String PROJECT_FULL_NAME = "BoD irondad";
     public static final String PROJECT_URL = "https://github.com/BoD/irondad";
-    public static final String VERSION_NAME = "v1.0";
+    public static final String VERSION_NAME = "v1.1";
 }

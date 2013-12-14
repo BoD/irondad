@@ -38,7 +38,8 @@ public class ControlHandler implements Handler {
 
     private static final String COMMAND = "!control";
 
-    public ControlHandler(ClientConfig clientConfig) {}
+    @Override
+    public void init(ClientConfig clientConfig) {}
 
     @Override
     public boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)

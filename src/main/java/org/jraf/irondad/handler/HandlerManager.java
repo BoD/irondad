@@ -27,16 +27,11 @@ package org.jraf.irondad.handler;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.control.ControlHandler;
-import org.jraf.irondad.handler.helloworld.HelloWorldHandler;
-import org.jraf.irondad.handler.mtgox.MtgoxHandler;
-import org.jraf.irondad.handler.pixgame.PixGameHandler;
-import org.jraf.irondad.handler.quote.QuoteHandler;
-import org.jraf.irondad.handler.twitter.TwitterHandler;
-import org.jraf.irondad.handler.youtube.YoutubeHandler;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -45,32 +40,79 @@ import org.jraf.irondad.util.Log;
 public class HandlerManager {
     private static final String TAG = Constants.TAG + HandlerManager.class.getSimpleName();
 
-    private ArrayList<Handler> mHandlerRegistry;
+    private List<Handler> mPrivmsgHandlers;
+    private Map<String, List<Handler>> mChannelHandlers;
+
 
     public HandlerManager(ClientConfig clientConfig) {
-        initRegistry(clientConfig);
+        HashMap<Class<? extends Handler>, Handler> allHandlers = new HashMap<Class<? extends Handler>, Handler>();
+
+        mPrivmsgHandlers = getHandlerList(clientConfig.getPrivmsgHandlers(), allHandlers, clientConfig);
+        mChannelHandlers = new HashMap<String, List<Handler>>();
+        for (String channel : clientConfig.getChannels()) {
+            mChannelHandlers.put(channel, getHandlerList(clientConfig.getHandlers(channel), allHandlers, clientConfig));
+        }
     }
 
-    private void initRegistry(ClientConfig clientConfig) {
-        mHandlerRegistry = new ArrayList<Handler>(10);
-
-        mHandlerRegistry.add(new ControlHandler(clientConfig));
-        mHandlerRegistry.add(new YoutubeHandler(clientConfig));
-        mHandlerRegistry.add(new TwitterHandler(clientConfig));
-        mHandlerRegistry.add(new HelloWorldHandler(clientConfig));
-        mHandlerRegistry.add(new MtgoxHandler(clientConfig));
-        mHandlerRegistry.add(new QuoteHandler(clientConfig));
-
-        mHandlerRegistry.add(new PixGameHandler(clientConfig));
+    private List<Handler> getHandlerList(List<Class<? extends Handler>> handlerClasses, HashMap<Class<? extends Handler>, Handler> allHandlers,
+            ClientConfig clientConfig) {
+        List<Handler> res = new ArrayList<Handler>();
+        for (Class<? extends Handler> handlerClass : handlerClasses) {
+            Handler handler = null;
+            try {
+                handler = getHandler(handlerClass, allHandlers, clientConfig);
+            } catch (Exception e) {
+                Log.w(TAG, "HandlerManager Could not get Handler " + handlerClass, e);
+            }
+            if (handler != null) res.add(handler);
+        }
+        return res;
     }
+
+    private Handler getHandler(Class<? extends Handler> handlerClass, HashMap<Class<? extends Handler>, Handler> allHandlers, ClientConfig clientConfig)
+            throws Exception {
+        Handler res = allHandlers.get(handlerClass);
+        if (res == null) {
+            res = handlerClass.newInstance();
+            res.init(clientConfig);
+            allHandlers.put(handlerClass, res);
+        }
+        return res;
+    }
+
+    //    private void initRegistry(ClientConfig clientConfig) {
+    //        mHandlerRegistry = new ArrayList<Handler>(10);
+    //
+    //        mHandlerRegistry.add(new ControlHandler(clientConfig));
+    //        mHandlerRegistry.add(new YoutubeHandler(clientConfig));
+    //        mHandlerRegistry.add(new TwitterHandler(clientConfig));
+    //        mHandlerRegistry.add(new HelloWorldHandler(clientConfig));
+    //        mHandlerRegistry.add(new MtgoxHandler(clientConfig));
+    //        mHandlerRegistry.add(new QuoteHandler(clientConfig));
+    //
+    //        mHandlerRegistry.add(new PixGameHandler(clientConfig));
+    //    }
 
     public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {
         List<String> textAsList = Arrays.asList(text.split("\\s+"));
-        for (Handler handler : mHandlerRegistry) {
-            try {
-                if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message)) break;
-            } catch (Exception e) {
-                Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleChannelMessage", e);
+
+        if (channel == null) {
+            // Handle privmsgs
+            for (Handler handler : mPrivmsgHandlers) {
+                try {
+                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message)) break;
+                } catch (Exception e) {
+                    Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                }
+            }
+        } else {
+            // Handle channel msgs
+            for (Handler handler : mChannelHandlers.get(channel)) {
+                try {
+                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message)) break;
+                } catch (Exception e) {
+                    Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                }
             }
         }
     }
