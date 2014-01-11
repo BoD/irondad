@@ -25,7 +25,6 @@
  */
 package org.jraf.irondad.handler.twitter;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,23 +38,38 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import com.github.kevinsawicki.http.HttpRequest;
-import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 public class TwitterHandler implements Handler {
     private static final String TAG = Constants.TAG + TwitterHandler.class.getSimpleName();
 
+    private static final String PREFIX = TwitterHandler.class.getName() + ".";
+    public static final String CONFIG_OAUTH_CONSUMER_KEY = PREFIX + "CONFIG_OAUTH_CONSUMER_KEY";
+    public static final String CONFIG_OAUTH_CONSUMER_SECRET = PREFIX + "CONFIG_OAUTH_CONSUMER_SECRET";
+    public static final String CONFIG_OAUTH_ACCESS_TOKEN = PREFIX + "CONFIG_OAUTH_ACCESS_TOKEN";
+    public static final String CONFIG_OAUTH_ACCESS_TOKEN_SECRET = PREFIX + "CONFIG_OAUTH_ACCESS_TOKEN_SECRET";
+
     private static final Pattern PATTERN_TWEET_ID = Pattern.compile("(.*twitter\\.com.*status/)([0-9]+)[^0-9]*.*", Pattern.CASE_INSENSITIVE);
     private static final int PATTERN_TWEET_ID_GROUP = 2;
-    private static final String URL_API_TWEET = "https://api.twitter.com/1/statuses/show/%s.json";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
+    private Twitter mTwitter;
+
     @Override
-    public void init(ClientConfig clientConfig) {}
+    public void init(ClientConfig clientConfig) {
+        ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+        configurationBuilder.setDebugEnabled(true).setOAuthConsumerKey(clientConfig.getExtraConfig(CONFIG_OAUTH_CONSUMER_KEY));
+        configurationBuilder.setOAuthConsumerSecret(clientConfig.getExtraConfig(CONFIG_OAUTH_CONSUMER_SECRET));
+        configurationBuilder.setOAuthAccessToken(clientConfig.getExtraConfig(CONFIG_OAUTH_ACCESS_TOKEN));
+        configurationBuilder.setOAuthAccessTokenSecret(clientConfig.getExtraConfig(CONFIG_OAUTH_ACCESS_TOKEN_SECRET));
+        TwitterFactory twitterFactory = new TwitterFactory(configurationBuilder.build());
+        mTwitter = twitterFactory.getInstance();
+    }
 
     @Override
     public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
@@ -72,18 +86,12 @@ public class TwitterHandler implements Handler {
         mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
-                String uri = String.format(URL_API_TWEET, tweetId);
                 try {
-                    String jsonStr = HttpRequest.get(uri).body();
-                    JSONObject mainObject = new JSONObject(jsonStr);
-                    String tweetText = mainObject.getString("text");
+                    Status status = mTwitter.showStatus(Long.valueOf(tweetId));
+                    String tweetText = status.getText();
                     connection.send(Command.PRIVMSG, channel, tweetText);
-                } catch (HttpRequestException e) {
-                    Log.w(TAG, "handleMessage Could not get " + uri, e);
-                } catch (JSONException e) {
-                    Log.w(TAG, "handleMessage Could not parse json", e);
-                } catch (IOException e) {
-                    Log.e(TAG, "handleMessage Could not send to connection", e);
+                } catch (Exception e) {
+                    Log.e(TAG, "handleMessage Could not get tweet " + tweetId, e);
                 }
             }
         });

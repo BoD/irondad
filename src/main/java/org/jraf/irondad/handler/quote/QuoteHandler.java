@@ -43,7 +43,7 @@ public class QuoteHandler implements Handler {
     private static final String COMMAND = "!quote";
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
     private static final String PREFIX = QuoteHandler.class.getName() + ".";
-    public static final String CONFIG_PATH_DB = PREFIX + "CONFIG_KEY";
+    public static final String CONFIG_PATH_DB = PREFIX + "CONFIG_PATH_DB";
 
     private DbManager mDbManager;
 

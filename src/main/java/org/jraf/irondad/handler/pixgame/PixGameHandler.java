@@ -55,9 +55,9 @@ public class PixGameHandler implements Handler {
     private static final String COMMAND = "!pix";
     private static final String RANDOM = "random";
     private static final String PREFIX = PixGameHandler.class.getName() + ".";
-    public static final String CONFIG_KEY = PREFIX + "KEY";
-    public static final String CONFIG_CX = PREFIX + "CX";
-    public static final String CONFIG_PATH_DICT = PREFIX + "PATH_DICT";
+    public static final String CONFIG_KEY = PREFIX + "CONFIG_KEY";
+    public static final String CONFIG_CX = PREFIX + "CONFIG_CX";
+    public static final String CONFIG_PATH_DICT = PREFIX + "CONFIG_PATH_DICT";
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 10;
