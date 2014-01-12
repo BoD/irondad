@@ -91,7 +91,7 @@ public class TwitterHandler implements Handler {
                     String tweetText = status.getText();
                     connection.send(Command.PRIVMSG, channel, tweetText);
                 } catch (Exception e) {
-                    Log.e(TAG, "handleMessage Could not get tweet " + tweetId, e);
+                    Log.w(TAG, "handleMessage" + tweetId, e);
                 }
             }
         });

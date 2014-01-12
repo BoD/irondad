@@ -51,7 +51,7 @@ import com.google.api.services.customsearch.model.Search;
 public class PixGameHandler implements Handler {
     private static final String TAG = Constants.TAG + PixGameHandler.class.getSimpleName();
 
-    private static final String APPLICATION_NAME = "BoD-irondad/1.0";
+    private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
     private static final String COMMAND = "!pix";
     private static final String RANDOM = "random";
     private static final String PREFIX = PixGameHandler.class.getName() + ".";
