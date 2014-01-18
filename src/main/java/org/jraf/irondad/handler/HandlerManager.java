@@ -25,7 +25,6 @@
  */
 package org.jraf.irondad.handler;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +32,7 @@ import java.util.Map;
 
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.protocol.ClientConfig;
+import org.jraf.irondad.protocol.ClientConfig.HandlerClassAndConfig;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
@@ -40,37 +40,42 @@ import org.jraf.irondad.util.Log;
 public class HandlerManager {
     private static final String TAG = Constants.TAG + HandlerManager.class.getSimpleName();
 
-    private List<Handler> mPrivmsgHandlers;
-    private Map<String, List<Handler>> mChannelHandlers;
 
+    private final Map<Handler, HandlerContext> mPrivmsgHandlerContexts = new HashMap<Handler, HandlerContext>();
+    private final Map<String, Map<Handler, HandlerContext>> mChannelHandlerContexts = new HashMap<String, Map<Handler, HandlerContext>>();
 
     public HandlerManager(ClientConfig clientConfig) {
         HashMap<Class<? extends Handler>, Handler> allHandlers = new HashMap<Class<? extends Handler>, Handler>();
 
-        mPrivmsgHandlers = getHandlerList(clientConfig.getPrivmsgHandlers(), allHandlers, clientConfig);
-        mChannelHandlers = new HashMap<String, List<Handler>>();
-        for (String channel : clientConfig.getChannels()) {
-            mChannelHandlers.put(channel, getHandlerList(clientConfig.getHandlers(channel), allHandlers, clientConfig));
-        }
-    }
-
-    private List<Handler> getHandlerList(List<Class<? extends Handler>> handlerClasses, HashMap<Class<? extends Handler>, Handler> allHandlers,
-            ClientConfig clientConfig) {
-        List<Handler> res = new ArrayList<Handler>();
-        for (Class<? extends Handler> handlerClass : handlerClasses) {
-            Handler handler = null;
+        // Privmsg handlers
+        for (String configName : clientConfig.getPrivmsgHandlerConfigNames()) {
             try {
-                handler = getHandler(handlerClass, allHandlers, clientConfig);
+                HandlerClassAndConfig handlerClassAndConfig = clientConfig.getHandlerConfig(configName);
+                Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig, configName);
+                mPrivmsgHandlerContexts.put(handler, new HandlerContext(handlerClassAndConfig.handlerConfig));
             } catch (Exception e) {
-                Log.w(TAG, "HandlerManager Could not get Handler " + handlerClass, e);
+                Log.e(TAG, "Could not get handler for config '" + configName + "'", e);
             }
-            if (handler != null) res.add(handler);
         }
-        return res;
+
+        // Channel handlers
+        for (String channel : clientConfig.getChannels()) {
+            Map<Handler, HandlerContext> channelHandlerContexts = new HashMap<Handler, HandlerContext>();
+            for (String configName : clientConfig.getChannelHandlerConfigNames(channel)) {
+                try {
+                    HandlerClassAndConfig handlerClassAndConfig = clientConfig.getHandlerConfig(configName);
+                    Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig, configName);
+                    channelHandlerContexts.put(handler, new HandlerContext(handlerClassAndConfig.handlerConfig));
+                } catch (Exception e) {
+                    Log.e(TAG, "Could not get handler for config '" + configName + "'", e);
+                }
+            }
+            mChannelHandlerContexts.put(channel, channelHandlerContexts);
+        }
     }
 
-    private Handler getHandler(Class<? extends Handler> handlerClass, HashMap<Class<? extends Handler>, Handler> allHandlers, ClientConfig clientConfig)
-            throws Exception {
+    private Handler getHandler(HashMap<Class<? extends Handler>, Handler> allHandlers, Class<? extends Handler> handlerClass, ClientConfig clientConfig,
+            String configName) throws Exception {
         Handler res = allHandlers.get(handlerClass);
         if (res == null) {
             res = handlerClass.newInstance();
@@ -80,36 +85,24 @@ public class HandlerManager {
         return res;
     }
 
-    //    private void initRegistry(ClientConfig clientConfig) {
-    //        mHandlerRegistry = new ArrayList<Handler>(10);
-    //
-    //        mHandlerRegistry.add(new ControlHandler(clientConfig));
-    //        mHandlerRegistry.add(new YoutubeHandler(clientConfig));
-    //        mHandlerRegistry.add(new TwitterHandler(clientConfig));
-    //        mHandlerRegistry.add(new HelloWorldHandler(clientConfig));
-    //        mHandlerRegistry.add(new MtgoxHandler(clientConfig));
-    //        mHandlerRegistry.add(new QuoteHandler(clientConfig));
-    //
-    //        mHandlerRegistry.add(new PixGameHandler(clientConfig));
-    //    }
-
     public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {
         List<String> textAsList = Arrays.asList(text.split("\\s+"));
 
         if (channel == null) {
             // Handle privmsgs
-            for (Handler handler : mPrivmsgHandlers) {
+            for (Handler handler : mPrivmsgHandlerContexts.keySet()) {
                 try {
-                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message)) break;
+                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) break;
                 } catch (Exception e) {
                     Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                 }
             }
         } else {
             // Handle channel msgs
-            for (Handler handler : mChannelHandlers.get(channel)) {
+            Map<Handler, HandlerContext> channelHandlerContexts = mChannelHandlerContexts.get(channel);
+            for (Handler handler : channelHandlerContexts.keySet()) {
                 try {
-                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message)) break;
+                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) break;
                 } catch (Exception e) {
                     Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                 }

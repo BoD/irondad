@@ -33,29 +33,30 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.HandlerConfig;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 
 public class ClientConfig {
+    public static class HandlerClassAndConfig {
+        public Class<? extends Handler> handlerClass;
+        public HandlerConfig handlerConfig;
+    }
+
     private final String mHost;
     private final int mPort;
     private final String mNickname;
     private final String mAdminPassword;
-    private List<Class<? extends Handler>> mPrivmsgHandlers;
-    private final Map<String, List<Class<? extends Handler>>> mChannelHandlers;
-    private final Map<String, String> mExtraConfig;
+    private final Map<String, HandlerClassAndConfig> mHandlerConfigs = new HashMap<String, HandlerClassAndConfig>();
+    private final List<String> mPrivmsgHandlerConfigNames = new ArrayList<String>();
+    private final ListMultimap<String, String> mChannelHandlerConfigNames = ArrayListMultimap.create();
 
-
-    @SuppressWarnings({ "unchecked" })
-    public ClientConfig(String host, int port, String nickname, String adminPassword, List<Class<? extends Handler>> privmsgHandlers,
-            HashMap<String, List<Class<? extends Handler>>> channelHandlers) {
+    public ClientConfig(String host, int port, String nickname, String adminPassword) {
         mHost = host;
         mPort = port;
         mNickname = nickname;
         mAdminPassword = adminPassword;
-        mPrivmsgHandlers = new ArrayList<Class<? extends Handler>>();
-        mPrivmsgHandlers.addAll(privmsgHandlers);
-        mChannelHandlers = (HashMap<String, List<Class<? extends Handler>>>) channelHandlers.clone();
-
-        mExtraConfig = new HashMap<String, String>();
     }
 
     public String getHost() {
@@ -67,7 +68,7 @@ public class ClientConfig {
     }
 
     public Set<String> getChannels() {
-        return Collections.unmodifiableSet(mChannelHandlers.keySet());
+        return Collections.unmodifiableSet(mChannelHandlerConfigNames.keySet());
     }
 
     public String getNickname() {
@@ -78,19 +79,30 @@ public class ClientConfig {
         return mAdminPassword;
     }
 
-    public void putExtraConfig(String key, String value) {
-        mExtraConfig.put(key, value);
+    public void addHandlerConfig(String configName, Class<? extends Handler> handlerClass, HandlerConfig handlerConfig) {
+        HandlerClassAndConfig handlerClassAndConfig = new HandlerClassAndConfig();
+        handlerClassAndConfig.handlerClass = handlerClass;
+        handlerClassAndConfig.handlerConfig = handlerConfig;
+        mHandlerConfigs.put(configName, handlerClassAndConfig);
     }
 
-    public String getExtraConfig(String key) {
-        return mExtraConfig.get(key);
+    public HandlerClassAndConfig getHandlerConfig(String configName) {
+        return mHandlerConfigs.get(configName);
     }
 
-    public List<Class<? extends Handler>> getPrivmsgHandlers() {
-        return Collections.unmodifiableList(mPrivmsgHandlers);
+    public List<String> getPrivmsgHandlerConfigNames() {
+        return Collections.unmodifiableList(mPrivmsgHandlerConfigNames);
     }
 
-    public List<Class<? extends Handler>> getHandlers(String channel) {
-        return Collections.unmodifiableList(mChannelHandlers.get(channel));
+    public void addPrivmsgHandlerConfig(String configName) {
+        mPrivmsgHandlerConfigNames.add(configName);
+    }
+
+    public List<String> getChannelHandlerConfigNames(String channel) {
+        return Collections.unmodifiableList(mChannelHandlerConfigNames.get(channel));
+    }
+
+    public void addChannelHandlerConfig(String channel, String configName) {
+        mChannelHandlerConfigNames.put(channel, configName);
     }
 }

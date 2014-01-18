@@ -23,30 +23,18 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.helloworld;
+package org.jraf.irondad.handler.quote;
 
-import java.util.List;
+import org.jraf.irondad.handler.HandlerConfig;
 
-import org.jraf.irondad.handler.BaseHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
-import org.jraf.irondad.protocol.Command;
-import org.jraf.irondad.protocol.Connection;
-import org.jraf.irondad.protocol.Message;
+public class QuoteHandlerConfig extends HandlerConfig {
+    private static final String DB_PATH = "DB_PATH";
 
-public class HelloWorldHandler extends BaseHandler {
-    @Override
-    protected String getCommand() {
-        return "hello";
+    public String getDbPath() {
+        return getString(DB_PATH);
     }
 
-    @Override
-    public void init(ClientConfig clientConfig) {}
-
-    @Override
-    public boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        connection.send(Command.PRIVMSG, fromNickname, "Well hello to you too, sir!");
-        return true;
+    public void setDbPath(String dbPath) {
+        put(DB_PATH, dbPath);
     }
 }

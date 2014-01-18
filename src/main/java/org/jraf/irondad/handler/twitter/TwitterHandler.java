@@ -32,7 +32,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
@@ -44,40 +45,20 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TwitterHandler implements Handler {
+public class TwitterHandler extends BaseHandler {
     private static final String TAG = Constants.TAG + TwitterHandler.class.getSimpleName();
-
-    private static final String PREFIX = TwitterHandler.class.getName() + ".";
-    public static final String CONFIG_OAUTH_CONSUMER_KEY = PREFIX + "CONFIG_OAUTH_CONSUMER_KEY";
-    public static final String CONFIG_OAUTH_CONSUMER_SECRET = PREFIX + "CONFIG_OAUTH_CONSUMER_SECRET";
-    public static final String CONFIG_OAUTH_ACCESS_TOKEN = PREFIX + "CONFIG_OAUTH_ACCESS_TOKEN";
-    public static final String CONFIG_OAUTH_ACCESS_TOKEN_SECRET = PREFIX + "CONFIG_OAUTH_ACCESS_TOKEN_SECRET";
 
     private static final Pattern PATTERN_TWEET_ID = Pattern.compile("(.*twitter\\.com.*status/)([0-9]+)[^0-9]*.*", Pattern.CASE_INSENSITIVE);
     private static final int PATTERN_TWEET_ID_GROUP = 2;
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    private Twitter mTwitter;
+    @Override
+    public void init(ClientConfig clientConfig) {}
 
     @Override
-    public void init(ClientConfig clientConfig) {
-        ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-        configurationBuilder.setDebugEnabled(true).setOAuthConsumerKey(clientConfig.getExtraConfig(CONFIG_OAUTH_CONSUMER_KEY));
-        configurationBuilder.setOAuthConsumerSecret(clientConfig.getExtraConfig(CONFIG_OAUTH_CONSUMER_SECRET));
-        configurationBuilder.setOAuthAccessToken(clientConfig.getExtraConfig(CONFIG_OAUTH_ACCESS_TOKEN));
-        configurationBuilder.setOAuthAccessTokenSecret(clientConfig.getExtraConfig(CONFIG_OAUTH_ACCESS_TOKEN_SECRET));
-        TwitterFactory twitterFactory = new TwitterFactory(configurationBuilder.build());
-        mTwitter = twitterFactory.getInstance();
-    }
-
-    @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
-            Message message) throws Exception {
-        if (channel == null) {
-            // Ignore private messages
-            return false;
-        }
+    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+            Message message, final HandlerContext handlerContext) throws Exception {
         final String tweetId = getTweetId(text);
         if (tweetId == null) {
             // Text doesn't contain a twitter link: ignore
@@ -87,7 +68,7 @@ public class TwitterHandler implements Handler {
             @Override
             public void run() {
                 try {
-                    Status status = mTwitter.showStatus(Long.valueOf(tweetId));
+                    Status status = getTwitter(handlerContext).showStatus(Long.valueOf(tweetId));
                     String tweetText = status.getText();
                     connection.send(Command.PRIVMSG, channel, tweetText);
                 } catch (Exception e) {
@@ -103,4 +84,23 @@ public class TwitterHandler implements Handler {
         if (!matcher.matches()) return null;
         return matcher.group(PATTERN_TWEET_ID_GROUP);
     }
+
+
+    private Twitter getTwitter(HandlerContext handlerContext) {
+        Twitter res = (Twitter) handlerContext.get("twitter");
+        if (res == null) {
+            TwitterHandlerConfig twitterHandlerConfig = (TwitterHandlerConfig) handlerContext.getHandlerConfig();
+            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.setDebugEnabled(true).setOAuthConsumerKey(twitterHandlerConfig.getOauthConsumerKey());
+            configurationBuilder.setOAuthConsumerSecret(twitterHandlerConfig.getOauthConsumerSecret());
+            configurationBuilder.setOAuthAccessToken(twitterHandlerConfig.getOauthAccessToken());
+            configurationBuilder.setOAuthAccessTokenSecret(twitterHandlerConfig.getOauthAccessTokenSecret());
+            TwitterFactory twitterFactory = new TwitterFactory(configurationBuilder.build());
+            res = twitterFactory.getInstance();
+
+            handlerContext.put("twitter", res);
+        }
+        return res;
+    }
+
 }

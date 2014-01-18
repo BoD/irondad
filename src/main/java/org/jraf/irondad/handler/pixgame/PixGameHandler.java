@@ -33,7 +33,8 @@ import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
@@ -48,16 +49,12 @@ import com.google.api.services.customsearch.CustomsearchRequestInitializer;
 import com.google.api.services.customsearch.model.Result;
 import com.google.api.services.customsearch.model.Search;
 
-public class PixGameHandler implements Handler {
+public class PixGameHandler extends BaseHandler {
     private static final String TAG = Constants.TAG + PixGameHandler.class.getSimpleName();
 
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
-    private static final String COMMAND = "!pix";
     private static final String RANDOM = "random";
-    private static final String PREFIX = PixGameHandler.class.getName() + ".";
-    public static final String CONFIG_KEY = PREFIX + "CONFIG_KEY";
-    public static final String CONFIG_CX = PREFIX + "CONFIG_CX";
-    public static final String CONFIG_PATH_DICT = PREFIX + "CONFIG_PATH_DICT";
+
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 10;
@@ -67,9 +64,9 @@ public class PixGameHandler implements Handler {
     private static final int GUESSES_MAX = 30;
     private static final String URL_HIDE = "http://lubek.b.free.fr/a.html?a=";
 
-    private String mCx;
-    private String mDictPath;
-    private Customsearch mCustomSearch;
+    /*
+     * TODO: all these fields should be stored in the HandlerContext
+     */
     private String mSearchTerms;
     private String mGameCreatedBy;
     private int mGuessCount;
@@ -77,58 +74,38 @@ public class PixGameHandler implements Handler {
     private List<Result> mSearchResults;
 
     @Override
-    public void init(ClientConfig clientConfig) {
-        mDictPath = clientConfig.getExtraConfig(CONFIG_PATH_DICT);
-        Customsearch.Builder customSearchBuilder;
-        try {
-            customSearchBuilder = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, null);
-            customSearchBuilder.setApplicationName(APPLICATION_NAME);
-            String key = clientConfig.getExtraConfig(CONFIG_KEY);
-            mCx = clientConfig.getExtraConfig(CONFIG_CX);
-            customSearchBuilder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(key));
-            mCustomSearch = customSearchBuilder.build();
-        } catch (Exception e) {
-            Log.e(TAG, "PixGameHandler Could not initialize! PixGameHandler will not work until this problem is resolved", e);
-        }
+    protected String getCommand() {
+        return "!pix";
     }
 
     @Override
-    public boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
-            throws Exception {
-        if (!text.startsWith(COMMAND)) return false;
+    public void init(ClientConfig clientConfig) {}
 
-        if (channel == null) {
-            // Private message
-            handlePrivateMessage(connection, fromNickname, text, textAsList);
-        } else {
-            // Channel message
-            handleChannelMessage(connection, channel, fromNickname, text, textAsList, message);
-        }
-        return true;
-    }
-
-    private void handlePrivateMessage(Connection connection, String fromNickname, String text, List<String> textAsList) throws IOException {
+    @Override
+    protected boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {
         if (textAsList.size() < 2) {
             connection.send(Command.PRIVMSG, fromNickname, "Syntax: \"!pix <search terms>\" or \"!pix random\" to use a random word.");
-            return;
+            return true;
         }
         if (isGameOngoing()) {
             connection.send(Command.PRIVMSG, fromNickname, "A game is already ongoing (started by " + mGameCreatedBy + ").");
-            return;
+            return true;
         }
-        String searchTerms = text.trim().substring(COMMAND.length() + 1).trim();
-        newGame(connection, fromNickname, searchTerms);
-        return;
+        String searchTerms = text.trim().substring(getCommand().length() + 1).trim();
+        newGame(connection, fromNickname, searchTerms, handlerContext);
+        return true;
     }
 
-    private void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
-            throws IOException {
+    @Override
+    protected boolean handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {
         if (!isGameOngoing()) {
             connection.send(Command.PRIVMSG, channel, fromNickname
                     + ": No game is currently ongoing.  Privmsg me \"!pix <search terms>\" or \"!pix random\" to start one.");
-            return;
+            return true;
         }
-        if (text.trim().equals(COMMAND)) {
+        if (text.trim().equals(getCommand())) {
             // Give current status
             connection.send(Command.PRIVMSG, channel, "Ongoing game started by " + mGameCreatedBy + " (" + mGuessCount
                     + " guesses).  Guess the search terms with \"!pix <your guess>\".");
@@ -136,21 +113,22 @@ public class PixGameHandler implements Handler {
             connection.send(Command.PRIVMSG, channel, hideUrl(mSearchResults.get(mGuessCount % RESULT_SIZE).getLink()));
         } else {
             // Guess the word
-            String guess = text.trim().substring(COMMAND.length() + 1).trim();
-            guess(connection, channel, fromNickname, guess);
+            String guess = text.trim().substring(getCommand().length() + 1).trim();
+            guess(connection, handlerContext, channel, fromNickname, guess);
         }
+        return true;
     }
 
-    private void newGame(Connection connection, String fromNickname, String searchTerms) throws IOException {
+    private void newGame(Connection connection, String fromNickname, String searchTerms, HandlerContext handlerContext) throws IOException {
         boolean isRandom = RANDOM.equalsIgnoreCase(searchTerms);
         if (isRandom) {
-            searchTerms = getRandomWord();
+            searchTerms = getRandomWord(handlerContext);
         } else if (!StringUtils.isAlphanumericSpace(searchTerms)) {
             connection.send(Command.PRIVMSG, fromNickname, "No punctuation allowed in the search terms.  Try another one.");
             return;
         }
         try {
-            mSearchResultCount = queryGoogle(connection, searchTerms);
+            mSearchResultCount = queryGoogle(handlerContext, connection, searchTerms);
         } catch (IOException e) {
             Log.w(TAG, "newGame Could not query Google", e);
             connection.send(Command.PRIVMSG, fromNickname, "Oops something went wrong...");
@@ -171,10 +149,12 @@ public class PixGameHandler implements Handler {
         }
     }
 
-    private long queryGoogle(Connection connection, String searchTerms) throws IOException {
+    private long queryGoogle(HandlerContext handlerContext, Connection connection, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
-        com.google.api.services.customsearch.Customsearch.Cse.List list = mCustomSearch.cse().list("\"" + searchTerms + "\"");
-        list.setCx(mCx);
+        Customsearch customsearch = getCustomsearch(handlerContext);
+        Customsearch.Cse.List list = customsearch.cse().list("\"" + searchTerms + "\"");
+        String cx = ((PixGameHandlerConfig) handlerContext.getHandlerConfig()).getCx();
+        list.setCx(cx);
         list.setSearchType("image");
         list.setFields("items/link,searchInformation/totalResults");
         list.setNum((long) RESULT_SIZE);
@@ -188,7 +168,26 @@ public class PixGameHandler implements Handler {
         return search.getSearchInformation().getTotalResults();
     }
 
-    private void guess(Connection connection, String channel, String fromNickname, String guess) throws IOException {
+    private Customsearch getCustomsearch(HandlerContext handlerContext) {
+        Customsearch res = (Customsearch) handlerContext.get("customsearch");
+        if (res == null) {
+            Customsearch.Builder customSearchBuilder;
+            try {
+                customSearchBuilder = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, null);
+                customSearchBuilder.setApplicationName(APPLICATION_NAME);
+                String key = ((PixGameHandlerConfig) handlerContext.getHandlerConfig()).getKey();
+                customSearchBuilder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(key));
+                res = customSearchBuilder.build();
+
+                handlerContext.put("customsearch", res);
+            } catch (Exception e) {
+                Log.e(TAG, "PixGameHandler Could not initialize! PixGameHandler will not work until this problem is resolved", e);
+            }
+        }
+        return res;
+    }
+
+    private void guess(Connection connection, HandlerContext handlerContext, String channel, String fromNickname, String guess) throws IOException {
         mGuessCount++;
         if (!StringUtils.stripAccents(mSearchTerms.toLowerCase(Locale.FRANCE)).equals(StringUtils.stripAccents(guess.toLowerCase(Locale.FRANCE)))) {
             // Lost
@@ -227,7 +226,7 @@ public class PixGameHandler implements Handler {
 
             if (mGuessCount % RESULT_SIZE == 0) {
                 // Fetch a new results page
-                queryGoogle(connection, mSearchTerms);
+                queryGoogle(handlerContext, connection, mSearchTerms);
             }
 
             connection.send(Command.PRIVMSG, channel, hideUrl(mSearchResults.get(mGuessCount % RESULT_SIZE).getLink()));
@@ -301,8 +300,8 @@ public class PixGameHandler implements Handler {
         return res.toString();
     }
 
-    public String getRandomWord() throws IOException {
-        RandomAccessFile file = new RandomAccessFile(mDictPath, "r");
+    public String getRandomWord(HandlerContext handlerContext) throws IOException {
+        RandomAccessFile file = new RandomAccessFile(((PixGameHandlerConfig) handlerContext.getHandlerConfig()).getDictPath(), "r");
         file.seek((long) (Math.random() * file.length()));
         // Eat the characters of the current line to go to beginning of the next line
         file.readLine();

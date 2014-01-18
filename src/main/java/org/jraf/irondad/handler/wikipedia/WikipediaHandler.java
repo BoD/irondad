@@ -38,6 +38,7 @@ import org.jraf.dbpedia2sqlite.db.Resource;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
@@ -57,13 +58,7 @@ public class WikipediaHandler implements Handler {
 
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
     private static final String SEARCH_PREFIX = "wikipedia ";
-    private static final String COMMAND = "!wikipedia ";
     private static final String REPLY_NO_MATCH = "No match";
-
-    private static final String PREFIX = WikipediaHandler.class.getName() + ".";
-    public static final String CONFIG_KEY = PREFIX + "CONFIG_KEY";
-    public static final String CONFIG_CX = PREFIX + "CONFIG_CX";
-    public static final String CONFIG_PATH_DB = PREFIX + "CONFIG_PATH_DB";
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 1;
@@ -71,45 +66,34 @@ public class WikipediaHandler implements Handler {
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
-    private String mCx;
-    private Customsearch mCustomSearch;
-    private DatabaseManager mDatabaseManager;
-
-    @Override
-    public void init(ClientConfig clientConfig) {
-        mDatabaseManager = new DatabaseManager(clientConfig.getExtraConfig(CONFIG_PATH_DB));
-        Customsearch.Builder customSearchBuilder;
-        try {
-            customSearchBuilder = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, null);
-            customSearchBuilder.setApplicationName(APPLICATION_NAME);
-            String key = clientConfig.getExtraConfig(CONFIG_KEY);
-            mCx = clientConfig.getExtraConfig(CONFIG_CX);
-            customSearchBuilder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(key));
-            mCustomSearch = customSearchBuilder.build();
-        } catch (Exception e) {
-            Log.e(TAG, "WikipediaHandler Could not initialize! WikipediaHandler will not work until this problem is resolved", e);
-        }
+    public String getCommand() {
+        return "!wikipedia ";
     }
 
     @Override
-    public boolean handleMessage(final Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
-            throws Exception {
-        if (!text.startsWith(COMMAND)) return false;
+    public void init(ClientConfig clientConfig) {}
+
+    @Override
+    public boolean handleMessage(final Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+            final HandlerContext handlerContext) throws Exception {
+        if (!text.trim().toLowerCase(Locale.getDefault()).startsWith(getCommand())) return false;
 
         final String chanOrNick = channel == null ? fromNickname : channel;
-        final String searchTerms = text.substring(COMMAND.length());
+        final String searchTerms = text.substring(getCommand().length());
 
         mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
                 try {
-                    String resourceName = queryGoogle(connection, searchTerms);
+                    String resourceName = queryGoogle(handlerContext, connection, searchTerms);
                     if (resourceName == null) {
                         connection.send(Command.PRIVMSG, chanOrNick, REPLY_NO_MATCH);
                         return;
                     }
 
-                    Resource resource = mDatabaseManager.getFromName(resourceName);
+                    DatabaseManager databaseManager = getDatabaseManager(handlerContext);
+
+                    Resource resource = databaseManager.getFromName(resourceName);
                     if (resource == null) {
                         connection.send(Command.PRIVMSG, chanOrNick, REPLY_NO_MATCH);
                         return;
@@ -130,10 +114,12 @@ public class WikipediaHandler implements Handler {
         return true;
     }
 
-    private String queryGoogle(Connection connection, String searchTerms) throws IOException {
+    private String queryGoogle(HandlerContext handlerContext, Connection connection, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
-        com.google.api.services.customsearch.Customsearch.Cse.List list = mCustomSearch.cse().list(SEARCH_PREFIX + searchTerms);
-        list.setCx(mCx);
+        Customsearch customsearch = getCustomsearch(handlerContext);
+        Customsearch.Cse.List list = customsearch.cse().list(SEARCH_PREFIX + searchTerms);
+        String cx = ((WikipediaHandlerConfig) handlerContext.getHandlerConfig()).getCx();
+        list.setCx(cx);
         list.setFields("items/link,searchInformation/totalResults");
         list.setNum((long) RESULT_SIZE);
 
@@ -147,6 +133,36 @@ public class WikipediaHandler implements Handler {
         String link = searchResults.get(0).getLink();
         link = getResourceNameFromUrl(link);
         return link;
+    }
+
+
+    protected DatabaseManager getDatabaseManager(HandlerContext handlerContext) {
+        DatabaseManager res = (DatabaseManager) handlerContext.get("databaseManager");
+        if (res == null) {
+            res = new DatabaseManager(((WikipediaHandlerConfig) handlerContext.getHandlerConfig()).getDbPath());
+            handlerContext.put("databaseManager", res);
+        }
+        return res;
+    }
+
+
+    private Customsearch getCustomsearch(HandlerContext handlerContext) {
+        Customsearch res = (Customsearch) handlerContext.get("customsearch");
+        if (res == null) {
+            Customsearch.Builder customSearchBuilder;
+            try {
+                customSearchBuilder = new Customsearch.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, null);
+                customSearchBuilder.setApplicationName(APPLICATION_NAME);
+                String key = ((WikipediaHandlerConfig) handlerContext.getHandlerConfig()).getKey();
+                customSearchBuilder.setCustomsearchRequestInitializer(new CustomsearchRequestInitializer(key));
+                res = customSearchBuilder.build();
+
+                handlerContext.put("customsearch", res);
+            } catch (Exception e) {
+                Log.e(TAG, "WikipediaHandler Could not initialize! WikipediaHandler will not work until this problem is resolved", e);
+            }
+        }
+        return res;
     }
 
     private static String getResourceNameFromUrl(String url) {

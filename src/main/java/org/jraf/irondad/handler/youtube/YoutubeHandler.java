@@ -33,7 +33,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
@@ -45,7 +46,7 @@ import org.json.JSONObject;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class YoutubeHandler implements Handler {
+public class YoutubeHandler extends BaseHandler {
     private static final String TAG = Constants.TAG + YoutubeHandler.class.getSimpleName();
 
     private static final Pattern PATTERN_VIDEO_ID = Pattern.compile("((.*youtube\\.com.*v=)|(.*youtu\\.be/))([a-zA-Z0-9_\\-]+)[^a-zA-Z0-9_\\-]*.*",
@@ -59,12 +60,8 @@ public class YoutubeHandler implements Handler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
-            Message message) throws Exception {
-        if (channel == null) {
-            // Ignore private messages
-            return false;
-        }
+    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+            Message message, HandlerContext handlerContext) throws Exception {
         final String videoId = getVideoId(text);
         if (videoId == null) {
             // Text doesn't contain a youtube link: ignore

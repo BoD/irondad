@@ -26,64 +26,77 @@
 package org.jraf.irondad.handler.quote;
 
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
-import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.handler.quote.DbManager.Quote;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
-public class QuoteHandler implements Handler {
-    private static final String TAG = Constants.TAG + QuoteHandler.class.getSimpleName();
+public class QuoteHandler extends BaseHandler {
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
 
-    private static final String COMMAND = "!quote";
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-    private static final String PREFIX = QuoteHandler.class.getName() + ".";
-    public static final String CONFIG_PATH_DB = PREFIX + "CONFIG_PATH_DB";
-
-    private DbManager mDbManager;
+    private Map<String, DbManager> mDbManagers = new HashMap<String, DbManager>();
+    private ClientConfig mClientConfig;
 
     @Override
-    public void init(ClientConfig clientConfig) {
-        mDbManager = new DbManager(clientConfig.getExtraConfig(CONFIG_PATH_DB));
+    protected String getCommand() {
+        return "!quote";
     }
 
     @Override
-    public boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
-            throws Exception {
-        if (!text.startsWith(COMMAND)) return false;
+    public void init(ClientConfig clientConfig) {
+        mClientConfig = clientConfig;
+    }
 
-        if (channel == null) {
-            // Private messages
-            if (textAsList.size() != 4) return false;
-            if (!textAsList.get(1).equals("rm")) return false;
-            long id;
-            try {
-                id = Long.valueOf(textAsList.get(2));
-            } catch (Exception e) {
-                return false;
-            }
-            if (!connection.getClient().getClientConfig().getAdminPassword().equals(textAsList.get(3))) return false;
-            int res = mDbManager.delete(id);
-            connection.send(Command.PRIVMSG, fromNickname, String.valueOf(res));
+    @Override
+    protected boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {
+        if (textAsList.size() != 5) return true;
+        if (!textAsList.get(1).equals("rm")) return true;
+        String channel = textAsList.get(2);
+        long id;
+        try {
+            id = Long.valueOf(textAsList.get(3));
+        } catch (Exception e) {
+            connection.send(Command.PRIVMSG, fromNickname, "0");
             return true;
         }
+        String password = textAsList.get(4);
+        if (!mClientConfig.getAdminPassword().equals(password)) return true;
+        DbManager dbManager = mDbManagers.get(channel);
+        if (dbManager == null) {
+            connection.send(Command.PRIVMSG, fromNickname, "0");
+            return true;
+        }
+        int res = dbManager.delete(id);
+        connection.send(Command.PRIVMSG, fromNickname, String.valueOf(res));
+        return true;
+    }
+
+    @Override
+    public boolean handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {
+        DbManager dbManager = getDbManager(channel, handlerContext);
 
         String displayText;
-        if (text.trim().equals(COMMAND)) {
+        if (textAsList.size() == 1) {
             // Random
-            Quote randomQuote = mDbManager.getRandom(channel);
+            Quote randomQuote = dbManager.getRandom(channel);
             if (randomQuote == null) {
                 displayText = "No quotes currently in db.";
             } else {
-                displayText = "\"" + randomQuote.text + "\" - " + DATE_FORMAT.format(randomQuote.date) + " (#" + randomQuote.id + ")";
+                SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+                displayText = "\"" + randomQuote.text + "\" - " + sdf.format(randomQuote.date) + " (#" + randomQuote.id + ")";
             }
         } else {
-            long id = mDbManager.insert(channel, message.origin.toFormattedString(), text.substring(text.indexOf(' ') + 1));
+            long id = dbManager.insert(channel, message.origin.toFormattedString(), text.substring(text.indexOf(' ') + 1));
             switch ((int) id) {
                 case DbManager.ERR_SQL_PROBLEM:
                     displayText = "Could not add quote.";
@@ -100,5 +113,15 @@ public class QuoteHandler implements Handler {
         }
         connection.send(Command.PRIVMSG, channel, displayText);
         return true;
+    }
+
+    private DbManager getDbManager(String channel, HandlerContext handlerContext) {
+        DbManager res = mDbManagers.get(channel);
+        if (res == null) {
+            QuoteHandlerConfig quoteHandlerConfig = (QuoteHandlerConfig) handlerContext.getHandlerConfig();
+            res = new DbManager(quoteHandlerConfig.getDbPath());
+            mDbManagers.put(channel, res);
+        }
+        return res;
     }
 }

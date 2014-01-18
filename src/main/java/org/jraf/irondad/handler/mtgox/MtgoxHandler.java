@@ -31,7 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
@@ -43,26 +44,24 @@ import org.json.JSONObject;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class MtgoxHandler implements Handler {
+public class MtgoxHandler extends BaseHandler {
     private static final String TAG = Constants.TAG + MtgoxHandler.class.getSimpleName();
 
-    private static final String COMMAND = "!btc";
     private static final String URL_API = "https://data.mtgox.com/api/2/BTCUSD/money/ticker";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
     @Override
+    protected String getCommand() {
+        return "!btc";
+    }
+
+    @Override
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
-            Message message) throws Exception {
-        if (channel == null) {
-            // Ignore private messages
-            return false;
-        }
-        if (!text.startsWith(COMMAND)) return false;
-
+    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+            Message message, HandlerContext handlerContext) throws Exception {
         // Special case for djis
         if ("djis".equalsIgnoreCase(fromNickname)) {
             connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 99 + 100));

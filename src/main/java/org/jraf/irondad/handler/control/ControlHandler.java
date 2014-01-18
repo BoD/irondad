@@ -27,32 +27,27 @@ package org.jraf.irondad.handler.control;
 
 import java.util.List;
 
-import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
-public class ControlHandler implements Handler {
-    private static final String TAG = Constants.TAG + ControlHandler.class.getSimpleName();
-
-    private static final String COMMAND = "!control";
+public class ControlHandler extends BaseHandler {
+    @Override
+    protected String getCommand() {
+        return "!control";
+    }
 
     @Override
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message)
-            throws Exception {
-        if (channel != null) {
-            // Ignore channel messages
-            return false;
-        }
-
-        if (!text.startsWith(COMMAND)) return false;
+    public boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {
         String adminPassword = connection.getClient().getClientConfig().getAdminPassword();
         if (!adminPassword.equals(textAsList.get(1))) return false;
-        connection.send(text.substring(COMMAND.length() + adminPassword.length() + 2));
+        connection.send(text.substring(getCommand().length() + adminPassword.length() + 2));
         return true;
     }
 }

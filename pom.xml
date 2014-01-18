@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jraf</groupId>
     <artifactId>irondad</artifactId>
-    <version>1.3</version>
+    <version>1.4</version>
     <packaging>jar</packaging>
     <name>irondad</name>
     <description>A very simple IRC client library written in Java.</description>
@@ -56,6 +56,12 @@
             <groupId>org.jraf</groupId>
             <artifactId>dbpedia2sqlite</artifactId>
             <version>1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>12.0</version>
         </dependency>
 
     </dependencies>

@@ -23,30 +23,36 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.helloworld;
+package org.jraf.irondad.handler.pixgame;
 
-import java.util.List;
+import org.jraf.irondad.handler.HandlerConfig;
 
-import org.jraf.irondad.handler.BaseHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
-import org.jraf.irondad.protocol.Command;
-import org.jraf.irondad.protocol.Connection;
-import org.jraf.irondad.protocol.Message;
+public class PixGameHandlerConfig extends HandlerConfig {
+    private static final String KEY = "KEY";
+    private static final String CX = "CX";
+    private static final String DICT_PATH = "DICT_PATH";
 
-public class HelloWorldHandler extends BaseHandler {
-    @Override
-    protected String getCommand() {
-        return "hello";
+    public String getKey() {
+        return getString(KEY);
     }
 
-    @Override
-    public void init(ClientConfig clientConfig) {}
+    public void setKey(String key) {
+        put(KEY, key);
+    }
 
-    @Override
-    public boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        connection.send(Command.PRIVMSG, fromNickname, "Well hello to you too, sir!");
-        return true;
+    public String getCx() {
+        return getString(CX);
+    }
+
+    public void setCx(String cx) {
+        put(CX, cx);
+    }
+
+    public String getDictPath() {
+        return getString(DICT_PATH);
+    }
+
+    public void setDictPath(String dictPath) {
+        put(DICT_PATH, dictPath);
     }
 }
