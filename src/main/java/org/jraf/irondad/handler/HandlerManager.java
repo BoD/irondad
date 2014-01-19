@@ -25,14 +25,19 @@
  */
 package org.jraf.irondad.handler;
 
+import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.ClientConfig.HandlerClassAndConfig;
+import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
@@ -40,9 +45,22 @@ import org.jraf.irondad.util.Log;
 public class HandlerManager {
     private static final String TAG = Constants.TAG + HandlerManager.class.getSimpleName();
 
+    // No more than 5 messages in 20 seconds
+    private static final int FLOOD_LOG_SIZE_MAX = 5;
+    private static final int FLOOD_TIME_DIFF = 20000;
+    private static final int FLOOD_PAUSE_DURATION = 60000;
 
     private final Map<Handler, HandlerContext> mPrivmsgHandlerContexts = new HashMap<Handler, HandlerContext>();
     private final Map<String, Map<Handler, HandlerContext>> mChannelHandlerContexts = new HashMap<String, Map<Handler, HandlerContext>>();
+
+    private static class FloodControl {
+        private final Deque<Long> mFloodLog = new ArrayDeque<Long>(FLOOD_LOG_SIZE_MAX);
+        private long mFloodPreventStart;
+        private boolean mFloodShowWarning;
+    }
+
+    private final Map<String, FloodControl> mFloodControl = new HashMap<String, FloodControl>();
+
 
     public HandlerManager(ClientConfig clientConfig) {
         HashMap<Class<? extends Handler>, Handler> allHandlers = new HashMap<Class<? extends Handler>, Handler>();
@@ -86,13 +104,20 @@ public class HandlerManager {
     }
 
     public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {
-        List<String> textAsList = Arrays.asList(text.split("\\s+"));
+        String chanOrNick = channel == null ? fromNickname : channel;
+        if (checkForFloodLocked(connection, chanOrNick)) {
+            return;
+        }
 
+        List<String> textAsList = Arrays.asList(text.split("\\s+"));
         if (channel == null) {
             // Handle privmsgs
             for (Handler handler : mPrivmsgHandlerContexts.keySet()) {
                 try {
-                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) break;
+                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) {
+                        accountForFlood(connection, chanOrNick);
+                        break;
+                    }
                 } catch (Exception e) {
                     Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                 }
@@ -102,11 +127,71 @@ public class HandlerManager {
             Map<Handler, HandlerContext> channelHandlerContexts = mChannelHandlerContexts.get(channel);
             for (Handler handler : channelHandlerContexts.keySet()) {
                 try {
-                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) break;
+                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) {
+                        accountForFlood(connection, chanOrNick);
+                        break;
+                    }
                 } catch (Exception e) {
                     Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                 }
             }
+        }
+    }
+
+    private FloodControl getFloodControl(String chanOrNick) {
+        FloodControl res = mFloodControl.get(chanOrNick);
+        if (res == null) {
+            res = new FloodControl();
+            mFloodControl.put(chanOrNick, res);
+        }
+        return res;
+    }
+
+    private boolean checkForFloodLocked(Connection connection, String chanOrNick) {
+        long now = System.currentTimeMillis();
+        FloodControl floodControl = getFloodControl(chanOrNick);
+        if (floodControl.mFloodPreventStart != 0) {
+            // Currently pausing
+            if (now - floodControl.mFloodPreventStart < FLOOD_PAUSE_DURATION) {
+                if (Config.LOGD) Log.d(TAG, "handleFlood Flood prevention: ignoring message");
+
+                if (floodControl.mFloodShowWarning) {
+                    try {
+                        connection.send(Command.PRIVMSG, chanOrNick, "Try again later");
+                    } catch (IOException e) {
+                        Log.w(TAG, "handle Could not send flood warning", e);
+                    }
+                    floodControl.mFloodShowWarning = false;
+                }
+
+                return true;
+            }
+            if (Config.LOGD) Log.d(TAG, "handleFlood Flood prevention: end of period");
+            floodControl.mFloodPreventStart = 0;
+            return false;
+        }
+        return false;
+    }
+
+    private void accountForFlood(Connection connection, String chanOrNick) {
+        long now = System.currentTimeMillis();
+        FloodControl floodControl = getFloodControl(chanOrNick);
+        floodControl.mFloodLog.addLast(now);
+        if (Config.LOGD) Log.d(TAG, "handleFlood mFloodLog=" + floodControl.mFloodLog);
+        if (floodControl.mFloodLog.size() < FLOOD_LOG_SIZE_MAX) {
+            if (Config.LOGD) Log.d(TAG, "handleFlood Not enough samples");
+            return;
+        }
+        // Make room for the new value
+        floodControl.mFloodLog.removeFirst();
+        long timeDiff = now - floodControl.mFloodLog.getFirst();
+
+        if (Config.LOGD) Log.d(TAG, "handleFlood timeDiff=" + timeDiff);
+
+        if (timeDiff < FLOOD_TIME_DIFF) {
+            // Too many messages in not enough time
+            floodControl.mFloodPreventStart = now;
+            floodControl.mFloodShowWarning = true;
         }
     }
 }
