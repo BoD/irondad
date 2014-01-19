@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.jraf.irondad.Config;
+import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.BaseHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.handler.quote.DbManager.Quote;
@@ -38,9 +40,13 @@ import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
 
 public class QuoteHandler extends BaseHandler {
+    private static final String TAG = Constants.TAG + QuoteHandler.class.getSimpleName();
+
     private static final String DATE_FORMAT = "yyyy-MM-dd";
+    private static final long MIN_DELAY_BETWEEN_QUOTES = 60000;
 
     private Map<String, DbManager> mDbManagers = new HashMap<String, DbManager>();
     private ClientConfig mClientConfig;
@@ -96,19 +102,42 @@ public class QuoteHandler extends BaseHandler {
                 displayText = "\"" + randomQuote.text + "\" - " + sdf.format(randomQuote.date) + " (#" + randomQuote.id + ")";
             }
         } else {
-            long id = dbManager.insert(channel, message.origin.toFormattedString(), text.substring(text.indexOf(' ') + 1));
-            switch ((int) id) {
-                case DbManager.ERR_SQL_PROBLEM:
-                    displayText = "Could not add quote.";
-                    break;
+            // New quote
+            long latestQuoteDate = dbManager.getLatestQuoteDate(channel);
+            if (System.currentTimeMillis() - latestQuoteDate < MIN_DELAY_BETWEEN_QUOTES) {
+                // Throttled
+                displayText = "Try again in 1 minute.";
+            } else {
+                // Check for black list
+                String nameUserHost = message.origin.toFormattedString();
+                boolean blackListed = false;
+                QuoteHandlerConfig quoteHandlerConfig = (QuoteHandlerConfig) handlerContext.getHandlerConfig();
+                for (String item : quoteHandlerConfig.getBlackList()) {
+                    if (nameUserHost.matches(item)) {
+                        if (Config.LOGD) Log.d(TAG, "handleChannelMessage " + nameUserHost + " matches " + item + " - blacklisted");
+                        blackListed = true;
+                        break;
+                    }
+                }
+                if (blackListed) {
+                    displayText = "Did not add quote.";
+                } else {
+                    // Add the new quote
+                    long id = dbManager.insert(channel, message.origin.toFormattedString(), text.substring(text.indexOf(' ') + 1));
+                    switch ((int) id) {
+                        case DbManager.ERR_SQL_PROBLEM:
+                            displayText = "Could not add quote.";
+                            break;
 
-                case DbManager.ERR_QUOTE_ALREADY_EXISTS:
-                    displayText = "This quote already exists!";
-                    break;
+                        case DbManager.ERR_QUOTE_ALREADY_EXISTS:
+                            displayText = "This quote already exists!";
+                            break;
 
-                default:
-                    displayText = "Quote #" + id + " added.";
-                    break;
+                        default:
+                            displayText = "Quote #" + id + " added.";
+                            break;
+                    }
+                }
             }
         }
         connection.send(Command.PRIVMSG, channel, displayText);

@@ -25,10 +25,15 @@
  */
 package org.jraf.irondad.handler.quote;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jraf.irondad.handler.HandlerConfig;
+import org.json.JSONArray;
 
 public class QuoteHandlerConfig extends HandlerConfig {
     private static final String DB_PATH = "DB_PATH";
+    private static final String BLACK_LIST = "BLACK_LIST";
 
     public String getDbPath() {
         return getString(DB_PATH);
@@ -36,5 +41,19 @@ public class QuoteHandlerConfig extends HandlerConfig {
 
     public void setDbPath(String dbPath) {
         put(DB_PATH, dbPath);
+    }
+
+    public void setBlackList(JSONArray blackList) {
+        put(BLACK_LIST, blackList);
+    }
+
+    public List<String> getBlackList() {
+        JSONArray blackList = getJSONArray(BLACK_LIST);
+        ArrayList<String> res = new ArrayList<String>();
+        int len = blackList.length();
+        for (int i = 0; i < len; i++) {
+            res.add(blackList.getString(i));
+        }
+        return res;
     }
 }

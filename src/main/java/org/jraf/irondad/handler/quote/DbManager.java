@@ -73,6 +73,13 @@ public class DbManager {
             " ORDER BY " +
             "_id";
     
+    private static final String SQL_SELECT_MAX_DATE = "SELECT " +
+            "max(_date)" +
+            " FROM " +
+            "quote" +
+            " WHERE " +
+            "channel=?";
+    
     private static final String SQL_CHECK_QUOTE_EXISTS = "SELECT " +
             "count(_id)" +
             " FROM " +
@@ -266,6 +273,30 @@ public class DbManager {
         }
         return ERR_SQL_PROBLEM;
     }
+
+    public long getLatestQuoteDate(String channel) {
+        if (Config.LOGD) Log.d(TAG, "getLatestQuoteDate channel=" + channel);
+        PreparedStatement statement = null;
+        try {
+            statement = mConnection.prepareStatement(SQL_SELECT_MAX_DATE);
+            statement.setString(1, channel);
+            ResultSet resultSet = statement.executeQuery();
+            resultSet.next();
+            long res = resultSet.getLong(1);
+            if (Config.LOGD) Log.d(TAG, "getLatestQuoteDate res=" + res);
+            return res;
+        } catch (SQLException e) {
+            Log.e(TAG, "Could not execute query", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "getLatestQuoteDate", e);
+            }
+        }
+        return 0;
+    }
+
 
     private int getRandom(int count) {
         if (mRandomOrder == null) {

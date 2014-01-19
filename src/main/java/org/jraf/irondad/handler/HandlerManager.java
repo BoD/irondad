@@ -157,7 +157,7 @@ public class HandlerManager {
 
                 if (floodControl.mFloodShowWarning) {
                     try {
-                        connection.send(Command.PRIVMSG, chanOrNick, "Try again later");
+                        connection.send(Command.PRIVMSG, chanOrNick, "Throttled");
                     } catch (IOException e) {
                         Log.w(TAG, "handle Could not send flood warning", e);
                     }

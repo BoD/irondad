@@ -47,7 +47,7 @@ public class Client {
     private ClientConfig mClientConfig;
     private Connection mConnection;
     private int mAlternateNickCounter;
-    private final ScheduledExecutorService mScheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService mScheduler = Executors.newScheduledThreadPool(4);
     private boolean mRegistered;
     private volatile boolean mStopRequested;
     private HandlerManager mHandlerManager;
@@ -201,7 +201,7 @@ public class Client {
         switch (message.command) {
             case RPL_WELCOME:
                 mRegistered = true;
-                joinChannels();
+                scheduleJoinChannels();
                 break;
 
             case RPL_NAMREPLY:
@@ -228,6 +228,20 @@ public class Client {
         }
     }
 
+
+    private void scheduleJoinChannels() {
+        if (Config.LOGD) Log.d(TAG, "scheduleJoinChannels Scheduling to join channels every 5 minutes");
+        mScheduler.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    joinChannels();
+                } catch (IOException e) {
+                    Log.w(TAG, "scheduleJoinChannels Could not join channels", e);
+                }
+            }
+        }, 0, 5 * 60, TimeUnit.SECONDS);
+    }
 
     private void gainOpIfNecessary(Message message) {
         if (Config.LOGD) Log.d(TAG, "gainOp message=" + message);
