@@ -51,6 +51,7 @@ public class Client {
     private boolean mRegistered;
     private volatile boolean mStopRequested;
     private HandlerManager mHandlerManager;
+    private boolean mJoinChannelsScheduled;
 
     public Client(ClientConfig clientConfig) {
         mClientConfig = clientConfig;
@@ -231,6 +232,8 @@ public class Client {
 
     private void scheduleJoinChannels() {
         if (Config.LOGD) Log.d(TAG, "scheduleJoinChannels Scheduling to join channels every 5 minutes");
+        if (mJoinChannelsScheduled) return;
+        mJoinChannelsScheduled = true;
         mScheduler.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
