@@ -27,14 +27,14 @@ package org.jraf.irondad.handler.helloworld;
 
 import java.util.List;
 
-import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
-public class HelloWorldHandler extends BaseHandler {
+public class HelloWorldHandler extends CommandHandler {
     @Override
     protected String getCommand() {
         return "hello";
@@ -44,9 +44,8 @@ public class HelloWorldHandler extends BaseHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+    public void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
         connection.send(Command.PRIVMSG, fromNickname, "Well hello to you too, sir!");
-        return true;
     }
 }

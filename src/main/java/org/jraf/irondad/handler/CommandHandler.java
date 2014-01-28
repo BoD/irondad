@@ -23,30 +23,19 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.control;
+package org.jraf.irondad.handler;
 
 import java.util.List;
+import java.util.Locale;
 
-import org.jraf.irondad.handler.CommandHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
-import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
-public class ControlHandler extends CommandHandler {
-    @Override
-    protected String getCommand() {
-        return "!control";
-    }
+public abstract class CommandHandler extends BaseHandler {
+    protected abstract String getCommand();
 
     @Override
-    public void init(ClientConfig clientConfig) {}
-
-    @Override
-    public void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        String adminPassword = connection.getClient().getClientConfig().getAdminPassword();
-        if (!adminPassword.equals(textAsList.get(1))) return;
-        connection.send(text.substring(getCommand().length() + adminPassword.length() + 2));
+    public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {
+        String command = getCommand();
+        return text.trim().toLowerCase(Locale.getDefault()).startsWith(command);
     }
 }

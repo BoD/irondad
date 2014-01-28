@@ -31,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
@@ -44,7 +44,7 @@ import org.json.JSONObject;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class MtgoxHandler extends BaseHandler {
+public class MtgoxHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + MtgoxHandler.class.getSimpleName();
 
     private static final String URL_API = "https://data.mtgox.com/api/2/BTCUSD/money/ticker";
@@ -60,12 +60,12 @@ public class MtgoxHandler extends BaseHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+    public void handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message, HandlerContext handlerContext) throws Exception {
         // Special case for djis
         if ("djis".equalsIgnoreCase(fromNickname)) {
             connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 99 + 100));
-            return true;
+            return;
         }
 
         mThreadPool.submit(new Runnable() {
@@ -91,6 +91,5 @@ public class MtgoxHandler extends BaseHandler {
                 }
             }
         });
-        return true;
     }
 }

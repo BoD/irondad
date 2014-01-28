@@ -42,6 +42,11 @@ public interface Handler {
     /**
      * @param channel If not {@code null}, the channel on which the message was sent. If {@code null}, this call is a private message.
      */
-    boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+    boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext);
+
+    /**
+     * @param channel If not {@code null}, the channel on which the message was sent. If {@code null}, this call is a private message.
+     */
+    void handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception;
 }

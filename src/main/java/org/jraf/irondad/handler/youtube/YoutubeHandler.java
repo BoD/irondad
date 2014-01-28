@@ -60,12 +60,18 @@ public class YoutubeHandler extends BaseHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+    public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {
+        String videoId = getVideoId(text);
+        return videoId != null;
+    }
+
+    @Override
+    public void handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message, HandlerContext handlerContext) throws Exception {
         final String videoId = getVideoId(text);
         if (videoId == null) {
             // Text doesn't contain a youtube link: ignore
-            return false;
+            return;
         }
         mThreadPool.submit(new Runnable() {
             @Override
@@ -87,7 +93,6 @@ public class YoutubeHandler extends BaseHandler {
                 }
             }
         });
-        return true;
     }
 
     private static String getVideoId(String text) {

@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.handler.quote.DbManager.Quote;
 import org.jraf.irondad.protocol.ClientConfig;
@@ -42,11 +42,11 @@ import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
 
-public class QuoteHandler extends BaseHandler {
+public class QuoteHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + QuoteHandler.class.getSimpleName();
 
     private static final String DATE_FORMAT = "yyyy-MM-dd";
-    private static final long MIN_DELAY_BETWEEN_QUOTES = 60000;
+    private static final long MIN_DELAY_BETWEEN_QUOTES = 2 * 60 * 1000;
 
     private Map<String, DbManager> mDbManagers = new HashMap<String, DbManager>();
     private ClientConfig mClientConfig;
@@ -62,32 +62,31 @@ public class QuoteHandler extends BaseHandler {
     }
 
     @Override
-    protected boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+    protected void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
-        if (textAsList.size() != 5) return true;
-        if (!textAsList.get(1).equals("rm")) return true;
+        if (textAsList.size() != 5) return;
+        if (!textAsList.get(1).equals("rm")) return;
         String channel = textAsList.get(2);
         long id;
         try {
             id = Long.valueOf(textAsList.get(3));
         } catch (Exception e) {
             connection.send(Command.PRIVMSG, fromNickname, "0");
-            return true;
+            return;
         }
         String password = textAsList.get(4);
-        if (!mClientConfig.getAdminPassword().equals(password)) return true;
+        if (!mClientConfig.getAdminPassword().equals(password)) return;
         DbManager dbManager = mDbManagers.get(channel);
         if (dbManager == null) {
             connection.send(Command.PRIVMSG, fromNickname, "0");
-            return true;
+            return;
         }
         int res = dbManager.delete(id);
         connection.send(Command.PRIVMSG, fromNickname, String.valueOf(res));
-        return true;
     }
 
     @Override
-    public boolean handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+    public void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
         DbManager dbManager = getDbManager(channel, handlerContext);
 
@@ -106,7 +105,7 @@ public class QuoteHandler extends BaseHandler {
             long latestQuoteDate = dbManager.getLatestQuoteDate(channel);
             if (System.currentTimeMillis() - latestQuoteDate < MIN_DELAY_BETWEEN_QUOTES) {
                 // Throttled
-                displayText = "Try again in 1 minute.";
+                displayText = "Try again in a bit.";
             } else {
                 // Check for black list
                 String nameUserHost = message.origin.toFormattedString();
@@ -141,7 +140,6 @@ public class QuoteHandler extends BaseHandler {
             }
         }
         connection.send(Command.PRIVMSG, channel, displayText);
-        return true;
     }
 
     private DbManager getDbManager(String channel, HandlerContext handlerContext) {

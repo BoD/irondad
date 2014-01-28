@@ -48,7 +48,7 @@ public class HandlerManager {
     // No more than 5 messages in 20 seconds
     private static final int FLOOD_LOG_SIZE_MAX = 5;
     private static final int FLOOD_TIME_DIFF = 20000;
-    private static final int FLOOD_PAUSE_DURATION = 60000;
+    private static final int FLOOD_PAUSE_DURATION = 2 * 60 * 1000;
 
     private final Map<Handler, HandlerContext> mPrivmsgHandlerContexts = new HashMap<Handler, HandlerContext>();
     private final Map<String, Map<Handler, HandlerContext>> mChannelHandlerContexts = new HashMap<String, Map<Handler, HandlerContext>>();
@@ -105,34 +105,38 @@ public class HandlerManager {
 
     public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {
         String chanOrNick = channel == null ? fromNickname : channel;
-        if (checkForFloodLocked(connection, chanOrNick)) {
-            return;
-        }
-
         List<String> textAsList = Arrays.asList(text.split("\\s+"));
         if (channel == null) {
             // Handle privmsgs
             for (Handler handler : mPrivmsgHandlerContexts.keySet()) {
-                try {
-                    if (handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) {
-                        accountForFlood(connection, chanOrNick);
-                        break;
+                if (handler.isMessageHandled(null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) {
+                    if (checkForFloodLocked(connection, chanOrNick)) {
+                        return;
                     }
-                } catch (Exception e) {
-                    Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                    accountForFlood(connection, chanOrNick);
+                    try {
+                        handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler));
+                    } catch (Exception e) {
+                        Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                    }
+                    break;
                 }
             }
         } else {
             // Handle channel msgs
             Map<Handler, HandlerContext> channelHandlerContexts = mChannelHandlerContexts.get(channel);
             for (Handler handler : channelHandlerContexts.keySet()) {
-                try {
-                    if (handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) {
-                        accountForFlood(connection, chanOrNick);
-                        break;
+                if (handler.isMessageHandled(channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) {
+                    if (checkForFloodLocked(connection, chanOrNick)) {
+                        return;
                     }
-                } catch (Exception e) {
-                    Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                    accountForFlood(connection, chanOrNick);
+                    try {
+                        handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler));
+                    } catch (Exception e) {
+                        Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
+                    }
+                    break;
                 }
             }
         }

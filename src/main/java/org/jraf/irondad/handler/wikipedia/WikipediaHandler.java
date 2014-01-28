@@ -37,7 +37,7 @@ import org.jraf.dbpedia2sqlite.db.DatabaseManager;
 import org.jraf.dbpedia2sqlite.db.Resource;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
@@ -53,7 +53,7 @@ import com.google.api.services.customsearch.CustomsearchRequestInitializer;
 import com.google.api.services.customsearch.model.Result;
 import com.google.api.services.customsearch.model.Search;
 
-public class WikipediaHandler implements Handler {
+public class WikipediaHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + WikipediaHandler.class.getSimpleName();
 
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
@@ -66,6 +66,7 @@ public class WikipediaHandler implements Handler {
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
+    @Override
     public String getCommand() {
         return "!wikipedia ";
     }
@@ -74,9 +75,9 @@ public class WikipediaHandler implements Handler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleMessage(final Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+    public void handleMessage(final Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             final HandlerContext handlerContext) throws Exception {
-        if (!text.trim().toLowerCase(Locale.getDefault()).startsWith(getCommand())) return false;
+        if (!text.trim().toLowerCase(Locale.getDefault()).startsWith(getCommand())) return;
 
         final String chanOrNick = channel == null ? fromNickname : channel;
         final String searchTerms = text.substring(getCommand().length());
@@ -86,6 +87,7 @@ public class WikipediaHandler implements Handler {
             public void run() {
                 try {
                     String resourceName = queryGoogle(handlerContext, connection, searchTerms);
+                    if (Config.LOGD) Log.d(TAG, "resourceName=" + resourceName);
                     if (resourceName == null) {
                         connection.send(Command.PRIVMSG, chanOrNick, REPLY_NO_MATCH);
                         return;
@@ -109,9 +111,6 @@ public class WikipediaHandler implements Handler {
                 }
             }
         });
-
-
-        return true;
     }
 
     private String queryGoogle(HandlerContext handlerContext, Connection connection, String searchTerms) throws IOException {

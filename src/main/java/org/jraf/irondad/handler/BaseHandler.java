@@ -26,36 +26,25 @@
 package org.jraf.irondad.handler;
 
 import java.util.List;
-import java.util.Locale;
 
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
 public abstract class BaseHandler implements Handler {
     @Override
-    public boolean handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+    public void handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
-        String command = getCommand();
-        if (command != null && !text.trim().toLowerCase(Locale.getDefault()).startsWith(command)) return false;
-
         if (channel != null) {
-            return handleChannelMessage(connection, channel, fromNickname, text, textAsList, message, handlerContext);
+            handleChannelMessage(connection, channel, fromNickname, text, textAsList, message, handlerContext);
+            return;
         }
 
-        return handlePrivmsgMessage(connection, fromNickname, text, textAsList, message, handlerContext);
+        handlePrivmsgMessage(connection, fromNickname, text, textAsList, message, handlerContext);
     }
 
-    protected boolean handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        return false;
-    }
+    protected void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {}
 
-    protected boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        return false;
-    }
-
-    protected String getCommand() {
-        return null;
-    }
+    protected void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+            HandlerContext handlerContext) throws Exception {}
 }

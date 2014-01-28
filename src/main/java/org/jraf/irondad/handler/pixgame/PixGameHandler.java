@@ -33,7 +33,7 @@ import java.util.Locale;
 import org.apache.commons.lang3.StringUtils;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.BaseHandler;
+import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
 import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
@@ -49,7 +49,7 @@ import com.google.api.services.customsearch.CustomsearchRequestInitializer;
 import com.google.api.services.customsearch.model.Result;
 import com.google.api.services.customsearch.model.Search;
 
-public class PixGameHandler extends BaseHandler {
+public class PixGameHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + PixGameHandler.class.getSimpleName();
 
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
@@ -82,28 +82,27 @@ public class PixGameHandler extends BaseHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    protected boolean handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
+    protected void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
         if (textAsList.size() < 2) {
             connection.send(Command.PRIVMSG, fromNickname, "Syntax: \"!pix <search terms>\" or \"!pix random\" to use a random word.");
-            return true;
+            return;
         }
         if (isGameOngoing()) {
             connection.send(Command.PRIVMSG, fromNickname, "A game is already ongoing (started by " + mGameCreatedBy + ").");
-            return true;
+            return;
         }
         String searchTerms = text.trim().substring(getCommand().length() + 1).trim();
         newGame(connection, fromNickname, searchTerms, handlerContext);
-        return true;
     }
 
     @Override
-    protected boolean handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
+    protected void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {
         if (!isGameOngoing()) {
             connection.send(Command.PRIVMSG, channel, fromNickname
                     + ": No game is currently ongoing.  Privmsg me \"!pix <search terms>\" or \"!pix random\" to start one.");
-            return true;
+            return;
         }
         if (text.trim().equals(getCommand())) {
             // Give current status
@@ -116,7 +115,6 @@ public class PixGameHandler extends BaseHandler {
             String guess = text.trim().substring(getCommand().length() + 1).trim();
             guess(connection, handlerContext, channel, fromNickname, guess);
         }
-        return true;
     }
 
     private void newGame(Connection connection, String fromNickname, String searchTerms, HandlerContext handlerContext) throws IOException {

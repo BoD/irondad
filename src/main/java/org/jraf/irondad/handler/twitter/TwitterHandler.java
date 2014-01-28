@@ -57,12 +57,18 @@ public class TwitterHandler extends BaseHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    public boolean handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
+    public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {
+        String tweetId = getTweetId(text);
+        return tweetId != null;
+    }
+
+    @Override
+    public void handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,
             Message message, final HandlerContext handlerContext) throws Exception {
         final String tweetId = getTweetId(text);
         if (tweetId == null) {
             // Text doesn't contain a twitter link: ignore
-            return false;
+            return;
         }
         mThreadPool.submit(new Runnable() {
             @Override
@@ -76,7 +82,6 @@ public class TwitterHandler extends BaseHandler {
                 }
             }
         });
-        return true;
     }
 
     private static String getTweetId(String text) {
