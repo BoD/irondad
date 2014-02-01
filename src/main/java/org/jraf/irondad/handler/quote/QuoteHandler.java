@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -99,6 +100,25 @@ public class QuoteHandler extends CommandHandler {
             } else {
                 SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
                 displayText = "\"" + randomQuote.text + "\" - " + sdf.format(randomQuote.date) + " (#" + randomQuote.id + ")";
+            }
+        } else if (textAsList.size() == 2 && textAsList.get(1).startsWith("#")) {
+            String id = textAsList.get(1);
+            if (id.length() < 2) {
+                displayText = "Could not find this quote.";
+            } else {
+                id = id.substring(1);
+                if (!StringUtils.isNumeric(id)) {
+                    displayText = "Could not find this quote.";
+                } else {
+                    long idLong = Long.valueOf(id);
+                    Quote quote = dbManager.getQuote(idLong);
+                    if (quote == null) {
+                        displayText = "Could not find this quote.";
+                    } else {
+                        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+                        displayText = "\"" + quote.text + "\" - " + sdf.format(quote.date) + " (#" + quote.id + ")";
+                    }
+                }
             }
         } else {
             // New quote

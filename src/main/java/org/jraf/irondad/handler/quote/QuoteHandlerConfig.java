@@ -48,8 +48,9 @@ public class QuoteHandlerConfig extends HandlerConfig {
     }
 
     public List<String> getBlackList() {
-        JSONArray blackList = getJSONArray(BLACK_LIST);
         ArrayList<String> res = new ArrayList<String>();
+        JSONArray blackList = optJSONArray(BLACK_LIST);
+        if (blackList == null) return res;
         int len = blackList.length();
         for (int i = 0; i < len; i++) {
             res.add(blackList.getString(i));

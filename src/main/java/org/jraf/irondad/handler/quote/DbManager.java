@@ -73,6 +73,13 @@ public class DbManager {
             " ORDER BY " +
             "_id";
     
+    private static final String SQL_SELECT_BY_ID = "SELECT " +
+            "_id, _date, _text" +
+            " FROM " +
+            "quote" +
+            " WHERE " +
+            "_id=?";
+    
     private static final String SQL_SELECT_MAX_DATE = "SELECT " +
             "max(_date)" +
             " FROM " +
@@ -152,7 +159,7 @@ public class DbManager {
             if (statement != null) try {
                 statement.close();
             } catch (SQLException e) {
-                Log.w(TAG, "isExistingQuote", e);
+                Log.w(TAG, "insert", e);
             }
         }
         return ERR_SQL_PROBLEM;
@@ -175,7 +182,7 @@ public class DbManager {
             if (statement != null) try {
                 statement.close();
             } catch (SQLException e) {
-                Log.w(TAG, "isExistingQuote", e);
+                Log.w(TAG, "getCount", e);
             }
         }
         return 0;
@@ -244,7 +251,34 @@ public class DbManager {
             if (statement != null) try {
                 statement.close();
             } catch (SQLException e) {
-                Log.w(TAG, "isExistingQuote", e);
+                Log.w(TAG, "getRandom", e);
+            }
+        }
+        return null;
+    }
+
+    public Quote getQuote(long id) {
+        if (Config.LOGD) Log.d(TAG, "getQuote id=" + id);
+
+        PreparedStatement statement = null;
+        try {
+            statement = mConnection.prepareStatement(SQL_SELECT_BY_ID);
+            statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (!resultSet.next()) return null;
+            Quote res = new Quote();
+            res.id = resultSet.getLong(1);
+            res.date = new Date(resultSet.getLong(2));
+            res.text = resultSet.getString(3);
+            if (Config.LOGD) Log.d(TAG, "getQuote res=" + res);
+            return res;
+        } catch (SQLException e) {
+            Log.e(TAG, "Could not get a quote by id", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "getQuote", e);
             }
         }
         return null;
@@ -263,12 +297,12 @@ public class DbManager {
             resetRandom();
             return rows;
         } catch (SQLException e) {
-            Log.e(TAG, "insert Could not insert", e);
+            Log.e(TAG, "delete Could not delete", e);
         } finally {
             if (statement != null) try {
                 statement.close();
             } catch (SQLException e) {
-                Log.w(TAG, "isExistingQuote", e);
+                Log.w(TAG, "delete", e);
             }
         }
         return ERR_SQL_PROBLEM;

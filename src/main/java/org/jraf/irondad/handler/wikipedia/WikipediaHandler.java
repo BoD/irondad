@@ -62,7 +62,7 @@ public class WikipediaHandler extends CommandHandler {
 
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 1;
-    private static final int MAX_LINE_LEN = 460;
+    private static final int MAX_LINE_LEN = 450;
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
