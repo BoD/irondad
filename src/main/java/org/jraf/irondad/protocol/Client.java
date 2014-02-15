@@ -47,6 +47,7 @@ public class Client {
     private ClientConfig mClientConfig;
     private Connection mConnection;
     private int mAlternateNickCounter;
+    private String mCurrentNickname;
     private final ScheduledExecutorService mScheduler = Executors.newScheduledThreadPool(4);
     private boolean mRegistered;
     private volatile boolean mStopRequested;
@@ -145,6 +146,7 @@ public class Client {
 
     private void nick(String nickname) throws IOException {
         if (Config.LOGD) Log.d(TAG, "nick nickname=" + nickname);
+        mCurrentNickname = nickname;
         send(Command.NICK, nickname);
     }
 
@@ -251,7 +253,7 @@ public class Client {
         String channel = message.parameters.get(2);
         String namesStr = message.parameters.get(3);
         String[] names = namesStr.split(" ");
-        if (names.length == 1 && !names[0].startsWith("@")) {
+        if (names.length == 1 && names[0].equals(mCurrentNickname)) {
             if (Config.LOGD) Log.d(TAG, "gainOp Only user on the chan: gaining op");
             try {
                 send(Command.PART, channel);
