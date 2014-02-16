@@ -35,12 +35,16 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.Random;
 
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.util.Log;
 
 public class DbManager {
+    private static final Random RANDOM = new Random();
+
     private static final String TAG = Constants.TAG + DbManager.class.getSimpleName();
 
     //@formatter:off
@@ -145,7 +149,7 @@ public class DbManager {
 
             int rows = statement.executeUpdate();
             if (Config.LOGD) Log.d(TAG, "insert rows=" + rows);
-            resetRandom();
+            updateRandomAfterInsert();
 
             ResultSet resultSet = statement.getGeneratedKeys();
             if (resultSet.next()) {
@@ -236,6 +240,7 @@ public class DbManager {
             ResultSet resultSet = statement.executeQuery();
             int random = getRandom(count);
             if (Config.LOGD) Log.d(TAG, "getRandom random=" + random);
+            //            resultSet.relative(random); // Not supported by the sqlite driver
             for (int i = 0; i < random + 1; i++) {
                 resultSet.next();
             }
@@ -294,7 +299,7 @@ public class DbManager {
 
             int rows = statement.executeUpdate();
             if (Config.LOGD) Log.d(TAG, "delete rows=" + rows);
-            resetRandom();
+            updateRandomAfterDelete();
             return rows;
         } catch (SQLException e) {
             Log.e(TAG, "delete Could not delete", e);
@@ -334,6 +339,7 @@ public class DbManager {
 
     private int getRandom(int count) {
         if (mRandomOrder == null) {
+            // Shuffle order
             mRandomOrder = new ArrayList<Integer>(count);
             for (int i = 0; i < count; i++) {
                 mRandomOrder.add(i);
@@ -343,12 +349,32 @@ public class DbManager {
         }
 
         int res = mRandomOrder.get(mRandomIdx);
-        mRandomIdx++;
-        if (mRandomIdx == count) resetRandom();
+        mRandomIdx += RANDOM.nextInt(3) + 1;
+        if (mRandomIdx >= mRandomOrder.size()) mRandomIdx = 0;
+
         return res;
     }
 
-    private void resetRandom() {
-        mRandomOrder = null;
+    private void updateRandomAfterInsert() {
+        if (mRandomOrder == null) return;
+        int newValue = mRandomOrder.size();
+        int newValueIndex = RANDOM.nextInt(newValue);
+        mRandomOrder.add(newValueIndex, newValue);
+        if (newValueIndex <= mRandomIdx) {
+            mRandomIdx += RANDOM.nextInt(3) + 1;
+            if (mRandomIdx >= mRandomOrder.size()) mRandomIdx = 0;
+        }
+    }
+
+    private void updateRandomAfterDelete() {
+        if (mRandomOrder == null) return;
+        int valueToRemove = mRandomOrder.size() - 1;
+        for (Iterator<Integer> i = mRandomOrder.iterator(); i.hasNext();) {
+            int val = i.next();
+            if (val == valueToRemove) {
+                i.remove();
+                break;
+            }
+        }
     }
 }
