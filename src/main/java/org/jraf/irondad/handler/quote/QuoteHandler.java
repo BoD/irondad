@@ -101,23 +101,36 @@ public class QuoteHandler extends CommandHandler {
                 SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
                 displayText = "\"" + randomQuote.text + "\" - " + sdf.format(randomQuote.date) + " (#" + randomQuote.id + ")";
             }
-        } else if (textAsList.size() == 2 && textAsList.get(1).startsWith("#")) {
-            String id = textAsList.get(1);
-            if (id.length() < 2) {
-                displayText = "Could not find this quote.";
-            } else {
-                id = id.substring(1);
-                if (!StringUtils.isNumeric(id)) {
+        } else if (textAsList.size() == 2) {
+            if (textAsList.get(1).startsWith("#")) {
+                // Find quote by id
+                String id = textAsList.get(1);
+                if (id.length() < 2) {
                     displayText = "Could not find this quote.";
                 } else {
-                    long idLong = Long.valueOf(id);
-                    Quote quote = dbManager.getQuote(idLong);
-                    if (quote == null) {
+                    id = id.substring(1);
+                    if (!StringUtils.isNumeric(id)) {
                         displayText = "Could not find this quote.";
                     } else {
-                        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
-                        displayText = "\"" + quote.text + "\" - " + sdf.format(quote.date) + " (#" + quote.id + ")";
+                        long idLong = Long.valueOf(id);
+                        Quote quote = dbManager.getQuote(idLong);
+                        if (quote == null) {
+                            displayText = "Could not find this quote.";
+                        } else {
+                            SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+                            displayText = "\"" + quote.text + "\" - " + sdf.format(quote.date) + " (#" + quote.id + ")";
+                        }
                     }
+                }
+            } else {
+                // Find quote by text search
+                String query = textAsList.get(1);
+                Quote quote = dbManager.getQuote(query);
+                if (quote == null) {
+                    displayText = "Could not find this quote.";
+                } else {
+                    SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+                    displayText = "\"" + quote.text + "\" - " + sdf.format(quote.date) + " (#" + quote.id + ")";
                 }
             }
         } else {

@@ -84,6 +84,13 @@ public class DbManager {
             " WHERE " +
             "_id=?";
     
+    private static final String SQL_SELECT_BY_LIKE = "SELECT " +
+            "_id, _date, _text" +
+            " FROM " +
+            "quote" +
+            " WHERE " +
+            "_text LIKE ?";
+    
     private static final String SQL_SELECT_MAX_DATE = "SELECT " +
             "max(_date)" +
             " FROM " +
@@ -269,6 +276,35 @@ public class DbManager {
         try {
             statement = mConnection.prepareStatement(SQL_SELECT_BY_ID);
             statement.setLong(1, id);
+            ResultSet resultSet = statement.executeQuery();
+            if (!resultSet.next()) return null;
+            Quote res = new Quote();
+            res.id = resultSet.getLong(1);
+            res.date = new Date(resultSet.getLong(2));
+            res.text = resultSet.getString(3);
+            if (Config.LOGD) Log.d(TAG, "getQuote res=" + res);
+            return res;
+        } catch (SQLException e) {
+            Log.e(TAG, "Could not get a quote by id", e);
+        } finally {
+            if (statement != null) try {
+                statement.close();
+            } catch (SQLException e) {
+                Log.w(TAG, "getQuote", e);
+            }
+        }
+        return null;
+    }
+
+    public Quote getQuote(String query) {
+        if (Config.LOGD) Log.d(TAG, "getQuote query=" + query);
+        if (!query.contains("%")) query = "%" + query + "%";
+        if (Config.LOGD) Log.d(TAG, "getQuote query=" + query);
+
+        PreparedStatement statement = null;
+        try {
+            statement = mConnection.prepareStatement(SQL_SELECT_BY_LIKE);
+            statement.setString(1, query);
             ResultSet resultSet = statement.executeQuery();
             if (!resultSet.next()) return null;
             Quote res = new Quote();
