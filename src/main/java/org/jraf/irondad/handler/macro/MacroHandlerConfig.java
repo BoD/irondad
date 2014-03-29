@@ -23,29 +23,19 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.pourquoi;
+package org.jraf.irondad.handler.macro;
 
-import java.util.List;
+import org.jraf.irondad.handler.HandlerConfig;
 
-import org.jraf.irondad.handler.CommandHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
-import org.jraf.irondad.protocol.Command;
-import org.jraf.irondad.protocol.Connection;
-import org.jraf.irondad.protocol.Message;
-
-public class PourquoiHandler extends CommandHandler {
-    @Override
-    protected String getCommand() {
-        return "!pourquoi";
+public class MacroHandlerConfig extends HandlerConfig {
+    public void put(String command, String reply) {
+        super.put(command, reply);
     }
 
     @Override
-    public void init(ClientConfig clientConfig) {}
-
-    @Override
-    protected void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        connection.send(Command.PRIVMSG, channel, "Pourquoi tu veux faire ça ?");
+    public String get(String command) {
+        String optString = optString(command);
+        if (optString.isEmpty()) return null;
+        return optString;
     }
 }
