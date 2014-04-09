@@ -23,12 +23,19 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad;
+package org.jraf.irondad.handler.feed;
 
-public class Constants {
-    public static final String TAG = "irondad/";
+import org.jraf.irondad.handler.HandlerConfig;
 
-    public static final String PROJECT_FULL_NAME = "BoD irondad";
-    public static final String PROJECT_URL = "https://github.com/BoD/irondad";
-    public static final String VERSION_NAME = "v1.8.0";
+public class FeedHandlerConfig extends HandlerConfig {
+    public void put(String command, String url) {
+        super.put(command, url);
+    }
+
+    @Override
+    public String get(String command) {
+        String optString = optString(command);
+        if (optString.isEmpty()) return null;
+        return optString;
+    }
 }
