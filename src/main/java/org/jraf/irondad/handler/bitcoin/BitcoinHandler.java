@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.mtgox;
+package org.jraf.irondad.handler.bitcoin;
 
 import java.io.IOException;
 import java.util.List;
@@ -38,16 +38,17 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.github.kevinsawicki.http.HttpRequest.HttpRequestException;
 
-public class MtgoxHandler extends CommandHandler {
-    private static final String TAG = Constants.TAG + MtgoxHandler.class.getSimpleName();
+public class BitcoinHandler extends CommandHandler {
+    private static final String TAG = Constants.TAG + BitcoinHandler.class.getSimpleName();
 
-    private static final String URL_API = "https://data.mtgox.com/api/2/BTCUSD/money/ticker";
+    private static final String URL_API = "http://api.bitcoincharts.com/v1/markets.json";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
@@ -64,7 +65,7 @@ public class MtgoxHandler extends CommandHandler {
             Message message, HandlerContext handlerContext) throws Exception {
         // Special case for djis
         if ("djis".equalsIgnoreCase(fromNickname)) {
-            connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 99 + 100));
+            connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", Math.random() * 299 + 200));
             return;
         }
 
@@ -77,11 +78,16 @@ public class MtgoxHandler extends CommandHandler {
                         // Try again once, sometimes we get an empty string
                         jsonStr = HttpRequest.get(URL_API).body();
                     }
-                    JSONObject mainObject = new JSONObject(jsonStr);
-                    JSONObject dataObject = mainObject.getJSONObject("data");
-                    JSONObject lastObject = dataObject.getJSONObject("last");
-                    String displayText = lastObject.getString("display");
-                    connection.send(Command.PRIVMSG, channel, displayText);
+                    JSONArray mainObject = new JSONArray(jsonStr);
+                    int len = mainObject.length();
+                    for (int i = 0; i < len; i++) {
+                        JSONObject dataObject = mainObject.getJSONObject(i);
+                        if ("bitstampUSD".equals(dataObject.getString("symbol"))) {
+                            double avg = dataObject.getDouble("avg");
+                            connection.send(Command.PRIVMSG, channel, String.format("$%1$1.2f", avg));
+                            break;
+                        }
+                    }
                 } catch (HttpRequestException e) {
                     Log.w(TAG, "handleMessage Could not get " + URL_API, e);
                 } catch (JSONException e) {

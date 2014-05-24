@@ -25,9 +25,12 @@
  */
 package org.jraf.irondad.handler.androidstats;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
@@ -92,6 +95,9 @@ public class AndroidStatsHandler extends CommandHandler {
         }
     }
 
+    private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
+
+
     @Override
     protected String getCommand() {
         return "!android stats";
@@ -101,9 +107,18 @@ public class AndroidStatsHandler extends CommandHandler {
     public void init(ClientConfig clientConfig) {}
 
     @Override
-    protected void handleChannelMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
-            HandlerContext handlerContext) throws Exception {
-        connection.send(Command.PRIVMSG, channel, getStats());
+    protected void handleChannelMessage(final Connection connection, final String channel, String fromNickname, String text, List<String> textAsList,
+            Message message, HandlerContext handlerContext) throws Exception {
+        mThreadPool.submit(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    connection.send(Command.PRIVMSG, channel, getStats());
+                } catch (IOException e) {
+                    Log.e(TAG, "handleMessage Could not send to connection", e);
+                }
+            }
+        });
     }
 
     private static String getStats() {
