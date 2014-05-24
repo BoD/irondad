@@ -69,9 +69,9 @@ public class FeedHandler extends BaseHandler {
         String url = getUrl(textAsList, handlerContext);
         SyndEntry latestEntry = getLatestEntry(url);
         if (latestEntry == null) return;
-        String entryLink = latestEntry.getUri();
+        String entryLink = latestEntry.getLink();
         if (entryLink == null) {
-            entryLink = latestEntry.getLink();
+            entryLink = latestEntry.getUri();
         }
         if (entryLink == null) {
             if (Config.LOGD) Log.d(TAG, "handleChannelMessage Could not get link for this entry");
