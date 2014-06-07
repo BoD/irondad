@@ -27,10 +27,17 @@ package org.jraf.irondad.handler;
 
 import java.util.List;
 
+import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
 public abstract class BaseHandler implements Handler {
+    @Override
+    public void init(ClientConfig clientConfig) throws Exception {}
+
+    @Override
+    public void init(HandlerContext handlerContext) throws Exception {}
+
     @Override
     public void handleMessage(Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,
             HandlerContext handlerContext) throws Exception {

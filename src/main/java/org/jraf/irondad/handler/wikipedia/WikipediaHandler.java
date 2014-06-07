@@ -40,7 +40,6 @@ import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -71,9 +70,6 @@ public class WikipediaHandler extends CommandHandler {
     public String getCommand() {
         return "!wikipedia ";
     }
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     public void handleMessage(final Connection connection, String channel, String fromNickname, String text, List<String> textAsList, Message message,

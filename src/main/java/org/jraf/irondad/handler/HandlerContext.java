@@ -27,19 +27,34 @@ package org.jraf.irondad.handler;
 
 import java.util.HashMap;
 
-public class HandlerContext extends HashMap<String, Object> {
-    private HandlerConfig mHandlerConfig;
+import org.jraf.irondad.protocol.Connection;
 
-    public HandlerContext(HandlerConfig handlerConfig) {
+public class HandlerContext extends HashMap<String, Object> {
+    private final HandlerConfig mHandlerConfig;
+    private final String mChannelName;
+    private Connection mConnection;
+
+    public HandlerContext(HandlerConfig handlerConfig, String channelName) {
         mHandlerConfig = handlerConfig;
+        mChannelName = channelName;
     }
 
     public HandlerConfig getHandlerConfig() {
         return mHandlerConfig;
     }
 
-    public void setHandlerConfig(HandlerConfig handlerConfig) {
-        mHandlerConfig = handlerConfig;
+    public void setConnection(Connection connection) {
+        mConnection = connection;
     }
 
+    public Connection getConnection() {
+        return mConnection;
+    }
+
+    /**
+     * @return {@code null} if this is a privmsg context.
+     */
+    public String getChannelName() {
+        return mChannelName;
+    }
 }

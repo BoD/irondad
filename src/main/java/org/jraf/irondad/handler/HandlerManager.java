@@ -60,7 +60,7 @@ public class HandlerManager {
     }
 
     private final Map<String, FloodControl> mFloodControl = new HashMap<String, FloodControl>();
-
+    private Connection mConnection;
 
     public HandlerManager(ClientConfig clientConfig) {
         HashMap<Class<? extends Handler>, Handler> allHandlers = new HashMap<Class<? extends Handler>, Handler>();
@@ -69,8 +69,10 @@ public class HandlerManager {
         for (String configName : clientConfig.getPrivmsgHandlerConfigNames()) {
             try {
                 HandlerClassAndConfig handlerClassAndConfig = clientConfig.getHandlerConfig(configName);
-                Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig, configName);
-                mPrivmsgHandlerContexts.put(handler, new HandlerContext(handlerClassAndConfig.handlerConfig));
+                Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig);
+                HandlerContext handlerContext = new HandlerContext(handlerClassAndConfig.handlerConfig, null);
+                mPrivmsgHandlerContexts.put(handler, handlerContext);
+                handler.init(handlerContext);
             } catch (Exception e) {
                 Log.e(TAG, "Could not get handler for config '" + configName + "'", e);
             }
@@ -82,8 +84,10 @@ public class HandlerManager {
             for (String configName : clientConfig.getChannelHandlerConfigNames(channel)) {
                 try {
                     HandlerClassAndConfig handlerClassAndConfig = clientConfig.getHandlerConfig(configName);
-                    Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig, configName);
-                    channelHandlerContexts.put(handler, new HandlerContext(handlerClassAndConfig.handlerConfig));
+                    Handler handler = getHandler(allHandlers, handlerClassAndConfig.handlerClass, clientConfig);
+                    HandlerContext handlerContext = new HandlerContext(handlerClassAndConfig.handlerConfig, channel);
+                    channelHandlerContexts.put(handler, handlerContext);
+                    handler.init(handlerContext);
                 } catch (Exception e) {
                     Log.e(TAG, "Could not get handler for config '" + configName + "'", e);
                 }
@@ -92,8 +96,8 @@ public class HandlerManager {
         }
     }
 
-    private Handler getHandler(HashMap<Class<? extends Handler>, Handler> allHandlers, Class<? extends Handler> handlerClass, ClientConfig clientConfig,
-            String configName) throws Exception {
+    private Handler getHandler(HashMap<Class<? extends Handler>, Handler> allHandlers, Class<? extends Handler> handlerClass, ClientConfig clientConfig)
+            throws Exception {
         Handler res = allHandlers.get(handlerClass);
         if (res == null) {
             res = handlerClass.newInstance();
@@ -103,19 +107,19 @@ public class HandlerManager {
         return res;
     }
 
-    public void handle(Connection connection, String channel, String fromNickname, String text, Message message) {
+    public void handle(String channel, String fromNickname, String text, Message message) {
         String chanOrNick = channel == null ? fromNickname : channel;
         List<String> textAsList = Arrays.asList(text.split("\\s+"));
         if (channel == null) {
             // Handle privmsgs
             for (Handler handler : mPrivmsgHandlerContexts.keySet()) {
                 if (handler.isMessageHandled(null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler))) {
-                    if (checkForFloodLocked(connection, chanOrNick)) {
+                    if (checkForFloodLocked(chanOrNick)) {
                         return;
                     }
-                    accountForFlood(connection, chanOrNick);
+                    accountForFlood(chanOrNick);
                     try {
-                        handler.handleMessage(connection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler));
+                        handler.handleMessage(mConnection, null, fromNickname, text, textAsList, message, mPrivmsgHandlerContexts.get(handler));
                     } catch (Exception e) {
                         Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                     }
@@ -127,12 +131,12 @@ public class HandlerManager {
             Map<Handler, HandlerContext> channelHandlerContexts = mChannelHandlerContexts.get(channel);
             for (Handler handler : channelHandlerContexts.keySet()) {
                 if (handler.isMessageHandled(channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler))) {
-                    if (checkForFloodLocked(connection, chanOrNick)) {
+                    if (checkForFloodLocked(chanOrNick)) {
                         return;
                     }
-                    accountForFlood(connection, chanOrNick);
+                    accountForFlood(chanOrNick);
                     try {
-                        handler.handleMessage(connection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler));
+                        handler.handleMessage(mConnection, channel, fromNickname, text, textAsList, message, channelHandlerContexts.get(handler));
                     } catch (Exception e) {
                         Log.w(TAG, "handle Handler " + handler + " threw an exception while calling handleMessage", e);
                     }
@@ -151,7 +155,7 @@ public class HandlerManager {
         return res;
     }
 
-    private boolean checkForFloodLocked(Connection connection, String chanOrNick) {
+    private boolean checkForFloodLocked(String chanOrNick) {
         long now = System.currentTimeMillis();
         FloodControl floodControl = getFloodControl(chanOrNick);
         if (floodControl.mFloodPreventStart != 0) {
@@ -161,7 +165,7 @@ public class HandlerManager {
 
                 if (floodControl.mFloodShowWarning) {
                     try {
-                        connection.send(Command.PRIVMSG, chanOrNick, "Throttled");
+                        mConnection.send(Command.PRIVMSG, chanOrNick, "Throttled");
                     } catch (IOException e) {
                         Log.w(TAG, "handle Could not send flood warning", e);
                     }
@@ -177,7 +181,7 @@ public class HandlerManager {
         return false;
     }
 
-    private void accountForFlood(Connection connection, String chanOrNick) {
+    private void accountForFlood(String chanOrNick) {
         long now = System.currentTimeMillis();
         FloodControl floodControl = getFloodControl(chanOrNick);
         floodControl.mFloodLog.addLast(now);
@@ -196,6 +200,22 @@ public class HandlerManager {
             // Too many messages in not enough time
             floodControl.mFloodPreventStart = now;
             floodControl.mFloodShowWarning = true;
+        }
+    }
+
+    public void setConnection(Connection connection) {
+        mConnection = connection;
+
+        // Privmsg HandlerContexts
+        for (HandlerContext handlerContext : mPrivmsgHandlerContexts.values()) {
+            handlerContext.setConnection(connection);
+        }
+
+        // Channel HandlerContexts
+        for (Map<Handler, HandlerContext> channelHandlerContexts : mChannelHandlerContexts.values()) {
+            for (HandlerContext handlerContext : channelHandlerContexts.values()) {
+                handlerContext.setConnection(connection);
+            }
         }
     }
 }

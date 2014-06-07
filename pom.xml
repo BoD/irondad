@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jraf</groupId>
     <artifactId>irondad</artifactId>
-    <version>1.9.0</version>
+    <version>1.10.0</version>
     <packaging>jar</packaging>
     <name>irondad</name>
     <description>A very simple IRC client library written in Java.</description>
@@ -73,6 +73,12 @@
             <artifactId>rome-fetcher</artifactId>
             <version>1.2</version>
         </dependency>
+        
+        <dependency>
+            <groupId>com.google.apis</groupId>
+            <artifactId>google-api-services-urlshortener</artifactId>
+            <version>v1-rev32-1.18.0-rc</version>
+        </dependency>
 
     </dependencies>
 
@@ -82,8 +88,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.0</version>
                 <configuration>
-                    <source>1.6</source>
-                    <target>1.6</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
                 </configuration>
             </plugin>
 

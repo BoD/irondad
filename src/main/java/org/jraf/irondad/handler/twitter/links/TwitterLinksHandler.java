@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.twitter;
+package org.jraf.irondad.handler.twitter.links;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +34,6 @@ import java.util.regex.Pattern;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.BaseHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -45,16 +44,13 @@ import twitter4j.Twitter;
 import twitter4j.TwitterFactory;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class TwitterHandler extends BaseHandler {
-    private static final String TAG = Constants.TAG + TwitterHandler.class.getSimpleName();
+public class TwitterLinksHandler extends BaseHandler {
+    private static final String TAG = Constants.TAG + TwitterLinksHandler.class.getSimpleName();
 
     private static final Pattern PATTERN_TWEET_ID = Pattern.compile("(.*twitter\\.com.*status/)([0-9]+)[^0-9]*.*", Pattern.CASE_INSENSITIVE);
     private static final int PATTERN_TWEET_ID_GROUP = 2;
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {
@@ -91,15 +87,15 @@ public class TwitterHandler extends BaseHandler {
     }
 
 
-    private Twitter getTwitter(HandlerContext handlerContext) {
+    private static Twitter getTwitter(HandlerContext handlerContext) {
         Twitter res = (Twitter) handlerContext.get("twitter");
         if (res == null) {
-            TwitterHandlerConfig twitterHandlerConfig = (TwitterHandlerConfig) handlerContext.getHandlerConfig();
+            TwitterLinksHandlerConfig twitterLinksHandlerConfig = (TwitterLinksHandlerConfig) handlerContext.getHandlerConfig();
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.setDebugEnabled(true).setOAuthConsumerKey(twitterHandlerConfig.getOauthConsumerKey());
-            configurationBuilder.setOAuthConsumerSecret(twitterHandlerConfig.getOauthConsumerSecret());
-            configurationBuilder.setOAuthAccessToken(twitterHandlerConfig.getOauthAccessToken());
-            configurationBuilder.setOAuthAccessTokenSecret(twitterHandlerConfig.getOauthAccessTokenSecret());
+            configurationBuilder.setDebugEnabled(true).setOAuthConsumerKey(twitterLinksHandlerConfig.getOauthConsumerKey());
+            configurationBuilder.setOAuthConsumerSecret(twitterLinksHandlerConfig.getOauthConsumerSecret());
+            configurationBuilder.setOAuthAccessToken(twitterLinksHandlerConfig.getOauthAccessToken());
+            configurationBuilder.setOAuthAccessTokenSecret(twitterLinksHandlerConfig.getOauthAccessTokenSecret());
             TwitterFactory twitterFactory = new TwitterFactory(configurationBuilder.build());
             res = twitterFactory.getInstance();
 

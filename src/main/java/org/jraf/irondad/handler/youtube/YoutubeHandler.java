@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.BaseHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -55,9 +54,6 @@ public class YoutubeHandler extends BaseHandler {
     private static final String URL_API_VIDEO = "http://gdata.youtube.com/feeds/api/videos/%s?alt=json&prettyprint=true";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {

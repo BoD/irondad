@@ -33,11 +33,20 @@ import org.jraf.irondad.protocol.Message;
 
 public interface Handler {
     /**
-     * Initialize this Handler.
+     * Initialize this Handler.<br/>
+     * This will be called only once.
      * 
      * @param clientConfig The client config.
      */
     void init(ClientConfig clientConfig) throws Exception;
+
+    /**
+     * Initialize this Handler for the given context.<br/>
+     * This will be called once per context.
+     * 
+     * @param clientConfig The client config.
+     */
+    void init(HandlerContext handlerContext) throws Exception;
 
     /**
      * @param channel If not {@code null}, the channel on which the message was sent. If {@code null}, this call is a private message.

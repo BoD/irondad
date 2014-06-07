@@ -117,6 +117,7 @@ public class Client {
             Log.w(TAG, "connectAndStartReceiveLoop Could not create connection from socket", e);
             throw e;
         }
+        mHandlerManager.setConnection(mConnection);
         try {
             register();
         } catch (IOException e) {
@@ -270,7 +271,7 @@ public class Client {
         String channel = dest.startsWith("#") ? dest : null;
         String fromNickname = message.origin.name;
         String text = message.parameters.get(1);
-        mHandlerManager.handle(mConnection, channel, fromNickname, text, message);
+        mHandlerManager.handle(channel, fromNickname, text, message);
     }
 
 

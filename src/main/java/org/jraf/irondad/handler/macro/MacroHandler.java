@@ -29,16 +29,11 @@ import java.util.List;
 
 import org.jraf.irondad.handler.BaseHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 
 public class MacroHandler extends BaseHandler {
-
-    @Override
-    public void init(ClientConfig clientConfig) throws Exception {}
-
     private String getReply(List<String> textAsList, HandlerContext handlerContext) {
         MacroHandlerConfig handlerConfig = (MacroHandlerConfig) handlerContext.getHandlerConfig();
         String command = textAsList.get(0);

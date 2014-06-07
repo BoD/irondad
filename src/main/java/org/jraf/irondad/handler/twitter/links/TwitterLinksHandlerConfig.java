@@ -23,11 +23,11 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.twitter;
+package org.jraf.irondad.handler.twitter.links;
 
 import org.jraf.irondad.handler.HandlerConfig;
 
-public class TwitterHandlerConfig extends HandlerConfig {
+public class TwitterLinksHandlerConfig extends HandlerConfig {
     public static final String OAUTH_CONSUMER_KEY = "OAUTH_CONSUMER_KEY";
     public static final String OAUTH_CONSUMER_SECRET = "OAUTH_CONSUMER_SECRET";
     public static final String OAUTH_ACCESS_TOKEN = "OAUTH_ACCESS_TOKEN";

@@ -36,7 +36,6 @@ import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -102,9 +101,6 @@ public class AndroidStatsHandler extends CommandHandler {
     protected String getCommand() {
         return "!android stats";
     }
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     protected void handleChannelMessage(final Connection connection, final String channel, String fromNickname, String text, List<String> textAsList,

@@ -33,7 +33,6 @@ import java.util.concurrent.Executors;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -56,9 +55,6 @@ public class BitcoinHandler extends CommandHandler {
     protected String getCommand() {
         return "!btc";
     }
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     public void handleChannelMessage(final Connection connection, final String channel, final String fromNickname, String text, List<String> textAsList,

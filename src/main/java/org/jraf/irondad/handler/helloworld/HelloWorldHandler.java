@@ -29,7 +29,6 @@ import java.util.List;
 
 import org.jraf.irondad.handler.CommandHandler;
 import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.ClientConfig;
 import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
@@ -39,9 +38,6 @@ public class HelloWorldHandler extends CommandHandler {
     protected String getCommand() {
         return "hello";
     }
-
-    @Override
-    public void init(ClientConfig clientConfig) {}
 
     @Override
     public void handlePrivmsgMessage(Connection connection, String fromNickname, String text, List<String> textAsList, Message message,
