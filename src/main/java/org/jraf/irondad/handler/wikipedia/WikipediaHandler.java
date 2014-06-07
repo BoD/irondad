@@ -33,6 +33,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.jraf.dbpedia2sqlite.db.DatabaseManager;
 import org.jraf.dbpedia2sqlite.db.Resource;
 import org.jraf.irondad.Config;
@@ -88,7 +89,7 @@ public class WikipediaHandler extends CommandHandler {
                 try {
                     String resourceName = queryGoogle(handlerContext, connection, searchTerms);
                     if (Config.LOGD) Log.d(TAG, "resourceName=" + resourceName);
-                    if (resourceName == null) {
+                    if (StringUtils.isBlank(resourceName)) {
                         connection.send(Command.PRIVMSG, chanOrNick, REPLY_NO_MATCH);
                         return;
                     }
