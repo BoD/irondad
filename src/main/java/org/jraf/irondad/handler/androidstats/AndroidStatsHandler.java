@@ -13,12 +13,12 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
@@ -53,6 +53,7 @@ public class AndroidStatsHandler extends CommandHandler {
     private static class StatPoint implements Comparable<StatPoint> {
         public int apiLevel;
         public float percentage;
+        public float cumulativePercentage;
 
         public static StatPoint fromJson(JSONObject json) {
             StatPoint res = new StatPoint();
@@ -63,9 +64,9 @@ public class AndroidStatsHandler extends CommandHandler {
 
         @Override
         public int compareTo(StatPoint o) {
-            if (percentage < o.percentage) return -1;
-            if (percentage == o.percentage) return 0;
-            return 1;
+            if (apiLevel < o.apiLevel) return 1;
+            if (apiLevel == o.apiLevel) return 0;
+            return -1;
         }
 
         @Override
@@ -139,27 +140,32 @@ public class AndroidStatsHandler extends CommandHandler {
             statPoints.add(statPoint);
         }
 
+        // Sort list
         Collections.sort(statPoints);
         if (Config.LOGD) Log.d(TAG, "statPoints=" + statPoints);
 
         StringBuilder res = new StringBuilder();
-        int i = 0;
-        float below11 = 0f;
+        float total = 0;
         for (StatPoint statPoint : statPoints) {
-            if (statPoint.apiLevel < 11) below11 += statPoint.percentage;
+            total += statPoint.percentage;
+            statPoint.cumulativePercentage = total;
+        }
 
+        // Reverse list
+        Collections.reverse(statPoints);
+        int i = 0;
+        for (StatPoint statPoint : statPoints) {
             res.append(String.valueOf(statPoint.apiLevel));
-            res.append(": ");
-            res.append(statPoint.percentage);
+            res.append("=");
+            res.append(String.format("%.00f", statPoint.cumulativePercentage));
             res.append("%");
 
             if (i < len - 1) {
-                res.append("   ");
+                res.append(", ");
             }
             i++;
         }
 
-        res.append("   -   2.x: " + below11 + "%");
 
         if (Config.LOGD) Log.d(TAG, "res=" + res);
 
