@@ -13,18 +13,20 @@
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 3 of the License, or (at your option) any later version.
- * 
+ *
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
 package org.jraf.irondad.handler.twitter.follow;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -52,6 +54,13 @@ import com.google.api.services.urlshortener.model.Url;
 
 public class TwitterFollowHandler extends BaseHandler {
     private static final String TAG = Constants.TAG + TwitterFollowHandler.class.getSimpleName();
+
+    public static final Comparator<Status> STATUS_COMPARATOR = new Comparator<Status>() {
+        @Override
+        public int compare(Status o1, Status o2) {
+            return o1.getCreatedAt().compareTo(o2.getCreatedAt());
+        }
+    };
 
     @Override
     public void init(HandlerContext handlerContext) throws Exception {
@@ -82,7 +91,7 @@ public class TwitterFollowHandler extends BaseHandler {
     }
 
     public static class CheckForNewTweetsRunnable implements Runnable {
-        private HandlerContext mHandlerContext;
+        private final HandlerContext mHandlerContext;
         private Status mLatestStatus;
 
 
@@ -96,7 +105,10 @@ public class TwitterFollowHandler extends BaseHandler {
                 if (Config.LOGD) Log.d(TAG, "run Checking for new tweets");
                 ResponseList<Status> statusList = getTwitter(mHandlerContext).getHomeTimeline(new Paging(1, 1));
                 if (statusList.isEmpty()) return;
-                Status latestStatus = statusList.get(0);
+
+                Collections.sort(statusList, STATUS_COMPARATOR);
+                Status latestStatus = statusList.get(statusList.size() - 1);
+
                 if (mLatestStatus == null) {
                     // First time
                     mLatestStatus = latestStatus;
