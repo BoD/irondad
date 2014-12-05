@@ -73,11 +73,17 @@
             <artifactId>rome-fetcher</artifactId>
             <version>1.2</version>
         </dependency>
-        
+
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-urlshortener</artifactId>
             <version>v1-rev32-1.18.0-rc</version>
+        </dependency>
+
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+            <version>2.3</version>
         </dependency>
 
     </dependencies>
@@ -125,4 +131,4 @@
 
     </build>
 
-</project> 
+</project>
