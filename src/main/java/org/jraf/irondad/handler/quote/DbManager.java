@@ -57,9 +57,9 @@ public class DbManager {
             ")";
     
     private static final String SQL_INSERT = "INSERT INTO quote " +
-    		"(channel, _date, added_by, _text)" +
-    		" VALUES " +
-    		"(?, ?, ?, ?)";
+            "(channel, _date, added_by, _text)" +
+            " VALUES " +
+            "(?, ?, ?, ?)";
 
     private static final String SQL_COUNT = "SELECT " +
             "count(_id)" +
@@ -85,10 +85,17 @@ public class DbManager {
             "_id=?";
     
     private static final String SQL_SELECT_BY_LIKE = "SELECT " +
-            "_id, _date, _text" +
-            " FROM " +
-            "quote" +
-            " WHERE " +
+            "_id, _date, _text" + 
+            " FROM " + 
+            "quote" + 
+            " WHERE "
+            + "_text LIKE ? LIMIT ?,1";
+    
+    private static final String SQL_SELECT_BY_LIKE_COUNT = "SELECT " + 
+            "count(*)" + 
+            " FROM " + 
+            "quote" + 
+            " WHERE " + 
             "_text LIKE ?";
     
     private static final String SQL_SELECT_MAX_DATE = "SELECT " +
@@ -223,7 +230,6 @@ public class DbManager {
         return false;
     }
 
-
     public static class Quote {
         public long id;
         public Date date;
@@ -303,10 +309,37 @@ public class DbManager {
 
         PreparedStatement statement = null;
         try {
+            int count = 1;
+            if (!query.startsWith("%\"") || !query.endsWith("\"%")) {
+
+                statement = mConnection.prepareStatement(SQL_SELECT_BY_LIKE_COUNT);
+                statement.setString(1, query);
+                ResultSet resultSetCount = statement.executeQuery();
+                if (!resultSetCount.next()) return null;
+
+                count = resultSetCount.getInt(1);
+                statement.close();
+                if (count == 0) {
+                    return null;
+                }
+            } else {
+                query = "%" + query.substring(2, query.length() - 2) + "%";
+            }
+
+            if (Config.LOGD) Log.d(TAG, "getQuote count=" + count);
+
+            // get a random index
+            double randNumber = Math.random() * count;
+
+            // Type cast double to int
+            int randomInt = (int) randNumber;
+
             statement = mConnection.prepareStatement(SQL_SELECT_BY_LIKE);
             statement.setString(1, query);
+            statement.setInt(2, randomInt);
             ResultSet resultSet = statement.executeQuery();
             if (!resultSet.next()) return null;
+
             Quote res = new Quote();
             res.id = resultSet.getLong(1);
             res.date = new Date(resultSet.getLong(2));
@@ -371,7 +404,6 @@ public class DbManager {
         }
         return 0;
     }
-
 
     private int getRandom(int count) {
         if (mRandomOrder == null) {
