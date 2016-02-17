@@ -27,6 +27,8 @@
 package org.jraf.irondad.handler.xkcd;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -39,9 +41,12 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import com.github.kevinsawicki.http.HttpRequest;
 
@@ -50,8 +55,12 @@ public class XkcdHandler extends CommandHandler {
 
     private static final String URL_HTML = "https://xkcd.com/";
     private static final String URL_HTML_RANDOM = "http://c.xkcd.com/random/comic/";
+    private static String lastTitle;
+
+
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
+
 
     @Override
     protected String getCommand() {
@@ -81,6 +90,13 @@ public class XkcdHandler extends CommandHandler {
     }
 
     private static String getUri(String param) {
+        if (param.equals("title")) {
+            return lastTitle;
+                   
+        } else if (param.equals("help")) {
+            return "Options: [random|number|title(displays the last comic title)|help]";
+                   
+        }
         String url = URL_HTML;
         if (param.equals("random")) {
             url = URL_HTML_RANDOM;
@@ -103,6 +119,7 @@ public class XkcdHandler extends CommandHandler {
         }
 
         String src = img.attr("src");
+        lastTitle = img.attr("title");
 
         if (src == null) {
             return null;

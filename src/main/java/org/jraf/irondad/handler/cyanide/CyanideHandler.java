@@ -77,6 +77,10 @@ public class CyanideHandler extends CommandHandler {
     }
 
     private static String getUri(String param) {
+        if (param.equals("help")) {
+            return "Options: [random|number|help]";
+                   
+        }
         String suffix = "latest/";
         if (param.equals("random")) {
             suffix = "random/";
