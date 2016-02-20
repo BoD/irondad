@@ -7,7 +7,7 @@
  *                              /___/
  * repository.
  *
- * Copyright (C) 2015 Nicolas Pomepuy
+ * Copyright (C) 2016 Nicolas Pomepuy
  * Copyright (C) 2013 Benoit 'BoD' Lubek (BoD@JRAF.org)
  *
  * This library is free software; you can redistribute it and/or
@@ -51,6 +51,8 @@ public class XkcdHandler extends CommandHandler {
     private static final String URL_HTML = "https://xkcd.com/";
     private static final String URL_HTML_RANDOM = "http://c.xkcd.com/random/comic/";
 
+    private static String mLastTitle;
+
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
     @Override
@@ -72,7 +74,7 @@ public class XkcdHandler extends CommandHandler {
             @Override
             public void run() {
                 try {
-                    connection.send(Command.PRIVMSG, channel, getUri(param));
+                    connection.send(Command.PRIVMSG, channel, getResult(param));
                 } catch (IOException e) {
                     Log.e(TAG, "handleMessage Could not send to connection", e);
                 }
@@ -80,7 +82,12 @@ public class XkcdHandler extends CommandHandler {
         });
     }
 
-    private static String getUri(String param) {
+    private static String getResult(String param) {
+        if (param.equals("title")) {
+            return mLastTitle;
+        } else if (param.equals("help")) {
+            return "Options: [random|number|title(displays the last comic title)|help]";
+        }
         String url = URL_HTML;
         if (param.equals("random")) {
             url = URL_HTML_RANDOM;
@@ -103,6 +110,7 @@ public class XkcdHandler extends CommandHandler {
         }
 
         String src = img.attr("src");
+        mLastTitle = img.attr("title");
 
         if (src == null) {
             return null;
@@ -112,6 +120,6 @@ public class XkcdHandler extends CommandHandler {
     }
 
     public static void main(String[] av) {
-        getUri("");
+        getResult("");
     }
 }

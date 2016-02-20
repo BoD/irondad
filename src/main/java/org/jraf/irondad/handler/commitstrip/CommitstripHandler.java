@@ -24,7 +24,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.cyanide;
+package org.jraf.irondad.handler.commitstrip;
 
 import java.io.IOException;
 import java.util.List;
@@ -39,19 +39,22 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 
 import com.github.kevinsawicki.http.HttpRequest;
 
-public class CyanideHandler extends CommandHandler {
-    private static final String TAG = Constants.TAG + CyanideHandler.class.getSimpleName();
+public class CommitstripHandler extends CommandHandler {
+    private static final String TAG = Constants.TAG + CommitstripHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "http://explosm.net/comics/";
+    private static final String URL_HTML = "http://www.commitstrip.com/en/";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
     @Override
     protected String getCommand() {
-        return "!cyanide";
+        return "!commitstrip";
     }
 
     @Override
@@ -78,24 +81,61 @@ public class CyanideHandler extends CommandHandler {
 
     private static String getResult(String param) {
         if (param.equals("help")) {
-            return "Options: [random|number|help]";
+            return "Options: [random|help]";
         }
-        String suffix = "latest/";
+        String suffix = "";
         if (param.equals("random")) {
             suffix = "random/";
-        } else if (param.matches("^-?\\d+$")) {
-            suffix = param + "/";
+            String html = HttpRequest.get(URL_HTML + suffix).body();
+            return extractImgFromHtml(html);
         }
 
-        String html = HttpRequest.get(URL_HTML + suffix).body();
+        String html = HttpRequest.get(URL_HTML).body();
         if (Config.LOGD) Log.d(TAG, html);
-        String start = "<img id=\"main-comic\" src=\"";
-        String end = "\"";
 
-        html = html.substring(html.indexOf(start) + start.length());
-        html = html.substring(0, html.indexOf(end));
+        // Find the first link
+        Document doc = Jsoup.parse(html);
+        Element excerpt = doc.select(".excerpt").first();
+        if (excerpt == null) {
+            return null;
+        }
+
+        Element a = excerpt.select("a").first();
+
+        if (a == null) {
+            return null;
+        }
+
+        String href = a.attr("href");
+        if (href == null) {
+            return null;
+        }
+
+        html = HttpRequest.get(href).body();
         if (Config.LOGD) Log.d(TAG, html);
-        return "http:" + html;
+
+        return extractImgFromHtml(html);
+    }
+
+    private static String extractImgFromHtml(String html) {
+        if (Config.LOGD) Log.d(TAG, html);
+        Document doc = Jsoup.parse(html);
+
+        Element article = doc.select("article").first();
+        if (article == null) {
+            return null;
+        }
+        Element div = article.select("div.entry-content").first();
+        if (div == null) {
+            return null;
+        }
+        Element img = div.select("img").first();
+        if (img == null) {
+            return null;
+        }
+
+        String src = img.attr("src");
+        return src;
     }
 
     public static void main(String[] av) {
