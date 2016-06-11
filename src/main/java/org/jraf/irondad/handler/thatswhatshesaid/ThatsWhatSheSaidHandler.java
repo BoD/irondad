@@ -38,7 +38,7 @@ public class ThatsWhatSheSaidHandler extends BaseHandler {
 
     @Override
     public boolean isMessageHandled(String channel, String fromNickname, String text, List<String> textAsList, Message message, HandlerContext handlerContext) {
-        return channel != null && Math.random() > PROBABILITY;
+        return channel != null && Math.random() < PROBABILITY;
     }
 
     @Override
