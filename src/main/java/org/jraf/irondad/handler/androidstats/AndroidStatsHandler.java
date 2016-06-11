@@ -48,7 +48,7 @@ import com.github.kevinsawicki.http.HttpRequest;
 public class AndroidStatsHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + AndroidStatsHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "http://developer.android.com/about/dashboards/index.html";
+    private static final String URL_HTML = "https://developer.android.com/about/dashboards/index.html";
 
     private static class StatPoint implements Comparable<StatPoint> {
         public int apiLevel;
@@ -155,13 +155,9 @@ public class AndroidStatsHandler extends CommandHandler {
         Collections.reverse(statPoints);
         int i = 0;
         for (StatPoint statPoint : statPoints) {
-            res.append(String.valueOf(statPoint.apiLevel));
-            res.append("=");
-            res.append(String.format("%.00f", statPoint.cumulativePercentage));
-            res.append("%");
-
+            res.append(String.format("%1$d=%2$.0f%%", statPoint.apiLevel, statPoint.cumulativePercentage));
             if (i < len - 1) {
-                res.append(", ");
+                res.append(" ");
             }
             i++;
         }
