@@ -31,6 +31,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONObject;
+
+import com.github.kevinsawicki.http.HttpRequest;
+
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -39,9 +43,6 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
-
-import com.github.kevinsawicki.http.HttpRequest;
-import org.json.JSONObject;
 
 public class IsThisForThat extends CommandHandler {
     private static final String TAG = Constants.TAG + IsThisForThat.class.getSimpleName();
@@ -57,9 +58,9 @@ public class IsThisForThat extends CommandHandler {
 
     @Override
     protected void handleChannelMessage(final Connection connection, final String channel, String fromNickname, String text, List<String> textAsList,
-            Message message, HandlerContext handlerContext) throws Exception {
+                                        Message message, HandlerContext handlerContext) throws Exception {
         if (Config.LOGD) Log.d(TAG, "handleChannelMessage");
-       
+
         mThreadPool.submit(new Runnable() {
             @Override
             public void run() {
@@ -73,10 +74,9 @@ public class IsThisForThat extends CommandHandler {
     }
 
     private static String getResult() {
-        
-
-        String html = HttpRequest.get(URL_HTML).header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.52 Safari/537.36").body();
-        Log.d(TAG, "Loading: "+URL_HTML);
+        String html = HttpRequest.get(URL_HTML)
+                .header("User-Agent", "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/28.0.1500.52 Safari/537.36").body();
+        Log.d(TAG, "Loading: " + URL_HTML);
         Log.d(TAG, html);
         if (html.contains("<html")) {
             return "oops";
@@ -84,8 +84,7 @@ public class IsThisForThat extends CommandHandler {
 
         JSONObject json = new JSONObject(html);
 
-        return "So, basically, it's like a "+json.getString("this")+" for "+json.getString("that");
-
+        return "So, basically, it's like a " + json.getString("this") + " for " + json.getString("that");
     }
 
     public static void main(String[] av) {
