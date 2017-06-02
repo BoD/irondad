@@ -23,7 +23,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.wiki;
+package org.jraf.irondad.handler.wikipedia;
 
 import org.jraf.irondad.handler.HandlerConfig;
 

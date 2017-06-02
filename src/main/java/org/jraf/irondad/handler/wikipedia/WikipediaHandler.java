@@ -24,7 +24,7 @@
  * License along with this library; if not, see
  * <http://www.gnu.org/licenses/>.
  */
-package org.jraf.irondad.handler.wiki;
+package org.jraf.irondad.handler.wikipedia;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
