@@ -26,25 +26,6 @@
  */
 package org.jraf.irondad.handler.wikipedia;
 
-import com.github.kevinsawicki.http.HttpRequest;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.customsearch.Customsearch;
-import com.google.api.services.customsearch.CustomsearchRequestInitializer;
-import com.google.api.services.customsearch.model.Result;
-import com.google.api.services.customsearch.model.Search;
-import org.jraf.irondad.Config;
-import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.CommandHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.Command;
-import org.jraf.irondad.protocol.Connection;
-import org.jraf.irondad.protocol.Message;
-import org.jraf.irondad.util.Log;
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -54,28 +35,52 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONArray;
+
+import com.github.kevinsawicki.http.HttpRequest;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.customsearch.Customsearch;
+import com.google.api.services.customsearch.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.model.Result;
+import com.google.api.services.customsearch.model.Search;
+
+import org.jraf.irondad.Config;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.CommandHandler;
+import org.jraf.irondad.handler.HandlerContext;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
+
 public class WikipediaHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + WikipediaHandler.class.getSimpleName();
 
-    //Wikipedia url parts
+    private static final String COMMAND = "!wiki";
+    private static final int MAX_LINE_LEN = 420;
+
+    // Wikipedia url parts
     private static final String URL_HTML = ".wikipedia.org/w/api.php?action=opensearch&search=";
     private static final String DEFAULT_LOCALE = "en";
     private static final String END_URL_HTML = "&limit=10&namespace=0&format=json";
 
-    //Google search constants
+    // Google search constants
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
     private static final String SEARCH_PREFIX = "wikipedia ";
     private static final JsonFactory JSON_FACTORY = new JacksonFactory();
     private static final int RESULT_SIZE = 1;
+
     // Possible replies
-    private static final String REPLY_HELP = "Usage: !wikipedia keywords | !wikipedia [fr/it/...] keywords | !wikipedia help";
+    private static final String REPLY_USAGE = "Usage: " + COMMAND + " keywords | " + COMMAND + " [fr/it/...] keywords | " + COMMAND + " help";
     private static final String REPLY_NO_MATCH = "No match";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
     @Override
     protected String getCommand() {
-        return "!wikipedia";
+        return COMMAND;
     }
 
     @Override
@@ -86,35 +91,38 @@ public class WikipediaHandler extends CommandHandler {
 
         final String locale;
 
-        final boolean isHelp ;
+        final boolean isUsage;
         if (textAsList.size() == 1 || textAsList.get(1).equals("help")) {
-            isHelp = true;
+            // Usage
+            isUsage = true;
             locale = DEFAULT_LOCALE;
         } else {
-
-
-            isHelp = false;
-
+            String firstParam = textAsList.get(1);
             int startIndex = 1;
-
-            if (textAsList.get(1).startsWith("[") && textAsList.get(1).endsWith("]")) {
-                locale = textAsList.get(1).substring(1, textAsList.get(1).length() - 1);
-                startIndex = 2;
+            if (firstParam.startsWith("[") && firstParam.endsWith("]")) {
+                if (textAsList.size() == 2) {
+                    // Locale argument, but no search terms
+                    isUsage = true;
+                    locale = DEFAULT_LOCALE;
+                } else {
+                    // Search with locale argument
+                    isUsage = false;
+                    locale = firstParam.substring(1, firstParam.length() - 1);
+                    startIndex = 2;
+                }
             } else {
+                // Search with default locale
+                isUsage = false;
                 locale = DEFAULT_LOCALE;
             }
 
-
             for (int i = startIndex; i < textAsList.size(); i++) {
-
-                if (i !=startIndex) {
-                    param+=" ";
+                if (i != startIndex) {
+                    param += " ";
                 }
                 param += textAsList.get(i);
             }
         }
-        
-        
 
         param = URLEncoder.encode(param, "UTF-8");
 
@@ -123,21 +131,18 @@ public class WikipediaHandler extends CommandHandler {
             @Override
             public void run() {
                 try {
-                    
-                    if (isHelp) {
-                        connection.send(Command.PRIVMSG, channel, REPLY_HELP);
-
+                    if (isUsage) {
+                        connection.send(Command.PRIVMSG, channel, REPLY_USAGE);
                         return;
                     }
-                    
 
-                    //First we query Google to get the right keywords
-                    String keywords = queryGoogle(handlerContext, connection,finalParam);
+                    // First we query Google to get the right keywords
+                    String keywords = queryGoogle(handlerContext, finalParam);
 
-                    //No keywords => no match
+                    // No keywords => no match
                     if (keywords == null) {
                         connection.send(Command.PRIVMSG, channel, REPLY_NO_MATCH);
-
+                        return;
                     }
 
                     keywords = URLEncoder.encode(keywords, "UTF-8");
@@ -149,7 +154,7 @@ public class WikipediaHandler extends CommandHandler {
         });
     }
 
-    private String queryGoogle(HandlerContext handlerContext, Connection connection, String searchTerms) throws IOException {
+    private String queryGoogle(HandlerContext handlerContext, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
         Customsearch customsearch = getCustomsearch(handlerContext);
         Customsearch.Cse.List list = customsearch.cse().list(SEARCH_PREFIX + searchTerms);
@@ -171,9 +176,7 @@ public class WikipediaHandler extends CommandHandler {
     }
 
     private static String getResult(String param, String locale) {
-
-
-        //Reconstruct wikipedia API url with the locale and keywords
+        // Reconstruct wikipedia API url with the locale and keywords
         String wikiUrl = "https://" + locale + URL_HTML + param + END_URL_HTML;
         if (Config.LOGD) Log.d(TAG, wikiUrl);
         String json = HttpRequest.get(wikiUrl).body();
@@ -181,48 +184,39 @@ public class WikipediaHandler extends CommandHandler {
 
         JSONArray result = new JSONArray(json);
 
-        String resultS = "";
-        String url = "";
+        String resultStr = result.getJSONArray(2).getString(0);
+        String url = result.getJSONArray(3).getString(0);
 
-        try {
-            resultS = result.getJSONArray(2).getString(0);
-            url = result.getJSONArray(3).getString(0);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-        //No result no url => no match
-        if ((resultS == null || resultS.equals("")) && (url == null || url.equals(""))) {
+        // No result no url => no match
+        if ((resultStr == null || resultStr.equals("")) && (url == null || url.equals(""))) {
             return REPLY_NO_MATCH;
         }
 
-
-        if ((resultS == null || resultS.equals(""))) {
-            resultS = result.getJSONArray(1).getString(0);
+        if ((resultStr == null || resultStr.equals(""))) {
+            resultStr = result.getJSONArray(1).getString(0);
         }
 
-
-        //Let's truncate (if needed) to fill a whole IRC line (420 chars) with the text and the URL
+        // Let's truncate (if needed) to fill a whole IRC line (420 chars) with the text and the URL
         // +1 is for the space between the text and the url
         boolean tooLong = false;
-        if(resultS.getBytes().length + (url.getBytes().length + 1) > 420) {
+        if (resultStr.getBytes().length + (url.getBytes().length + 1) > MAX_LINE_LEN) {
             tooLong = true;
         }
 
         // +4 is for the space and the … char
         if (tooLong) {
-            while(resultS.getBytes().length + (url.getBytes().length + 4) > 420) {
-                resultS = resultS.substring(0, resultS.length()-1);
+            while (resultStr.getBytes().length + (url.getBytes().length + 4) > MAX_LINE_LEN) {
+                resultStr = resultStr.substring(0, resultStr.length() - 1);
             }
         }
 
         if (tooLong) {
-            resultS += "… ";
+            resultStr += "… ";
         } else {
-            resultS += " ";
+            resultStr += " ";
         }
 
-        return  resultS + url;
+        return resultStr + url;
     }
 
     private static String getResourceNameFromUrl(String url) {
@@ -230,10 +224,7 @@ public class WikipediaHandler extends CommandHandler {
         url = url.substring(slashIdx + 1);
         try {
             url = URLDecoder.decode(url, "utf-8");
-        } catch (UnsupportedEncodingException e) {
-            Log.w(TAG, "getResourceNameFromUrl Could not urldecode " + url, e);
-            return null;
-        }
+        } catch (UnsupportedEncodingException ignored) {}
         url = url.replace('_', ' ');
         url = url.toLowerCase(Locale.US);
         return url;
@@ -256,9 +247,5 @@ public class WikipediaHandler extends CommandHandler {
             }
         }
         return res;
-    }
-
-    public static void main(String[] av) {
-        getResult("", DEFAULT_LOCALE);
     }
 }
