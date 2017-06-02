@@ -30,7 +30,6 @@ import org.jraf.irondad.handler.HandlerConfig;
 public class WikipediaHandlerConfig extends HandlerConfig {
     private static final String KEY = "KEY";
     private static final String CX = "CX";
-    private static final String DB_PATH = "DB_PATH";
 
     public String getKey() {
         return getString(KEY);
@@ -48,11 +47,5 @@ public class WikipediaHandlerConfig extends HandlerConfig {
         put(CX, cx);
     }
 
-    public String getDbPath() {
-        return getString(DB_PATH);
-    }
 
-    public void setDbPath(String dbPath) {
-        put(DB_PATH, dbPath);
-    }
 }
