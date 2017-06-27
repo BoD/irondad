@@ -74,6 +74,7 @@ public class MonitorPageHandler extends BaseHandler {
                 MonitorPageHandlerConfig config = (MonitorPageHandlerConfig) mHandlerContext.getHandlerConfig();
                 for (MonitorPageHandlerConfig.Page page : config.getPages()) {
                     String pageUri = page.uri;
+                    if (Config.LOGD) Log.d(TAG, "=====================================");
                     if (Config.LOGD) Log.d(TAG, "run pageUri=" + pageUri);
 
                     // Blocking
@@ -81,7 +82,9 @@ public class MonitorPageHandler extends BaseHandler {
 
                     // Extract content
                     pageContents = pageContents.substring(pageContents.indexOf(page.contentStart));
-                    pageContents = pageContents.substring(0, pageContents.lastIndexOf(page.contentEnd));
+                    pageContents = pageContents.substring(0, pageContents.indexOf(page.contentEnd));
+
+                    if (Config.LOGD) Log.d(TAG, pageContents);
 
                     int pageHash = pageContents.hashCode();
                     @SuppressWarnings("unchecked")
@@ -108,6 +111,9 @@ public class MonitorPageHandler extends BaseHandler {
                             if (Config.LOGD) Log.d(TAG, "run No change");
                         }
                     }
+
+                    if (Config.LOGD) Log.d(TAG, "=====================================");
+                    if (Config.LOGD) Log.d(TAG, "");
                 }
 
             } catch (Exception e) {
