@@ -132,9 +132,9 @@ public class TwitterFollowHandler extends BaseHandler {
                 //                String shortTweetUrl = shortenUrl(tweetUrl);
                 String text;
                 if (latestStatus.getRetweetedStatus() != null) {
-                    text = "RT " + latestStatus.getRetweetedStatus().getUser().getScreenName() + " " + latestStatus.getRetweetedStatus().getText();
+                    text = "RT " + latestStatus.getRetweetedStatus().getUser().getScreenName() + " " + latestStatus.getRetweetedStatus().getText().replace("\n", "");
                 } else {
-                    text = latestStatus.getText();
+                    text = latestStatus.getText().replace("\n", "");
                 }
 
                 text = "@" + screenName + " " + text;
