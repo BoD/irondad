@@ -32,6 +32,11 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import com.github.kevinsawicki.http.HttpRequest;
+
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -40,15 +45,11 @@ import org.jraf.irondad.protocol.Command;
 import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import com.github.kevinsawicki.http.HttpRequest;
 
 public class AndroidStatsHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + AndroidStatsHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "https://developer.android.com/about/dashboards/index.html";
+    private static final String URL_HTML = "https://android-dot-google-developers.appspot.com/about/dashboards/index_71147ba33f30ba9017a0f8ca522ec1d6.frame";
 
     private static class StatPoint implements Comparable<StatPoint> {
         public int apiLevel;

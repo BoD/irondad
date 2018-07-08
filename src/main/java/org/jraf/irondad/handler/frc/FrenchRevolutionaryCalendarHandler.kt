@@ -25,7 +25,6 @@
  */
 package org.jraf.irondad.handler.frc
 
-import ca.rmen.lfrc.FrenchRevolutionaryCalendar
 import org.jraf.irondad.Config
 import org.jraf.irondad.Constants
 import org.jraf.irondad.handler.CommandHandler
@@ -35,19 +34,23 @@ import org.jraf.irondad.protocol.Connection
 import org.jraf.irondad.protocol.Message
 import org.jraf.irondad.util.Log
 import java.io.IOException
-import java.util.*
+import java.util.GregorianCalendar
+import java.util.Locale
 
 class FrenchRevolutionaryCalendarHandler : CommandHandler() {
 
     override fun getCommand() = "!frc"
 
     @Throws(Exception::class)
-    override fun handleChannelMessage(connection: Connection, channel: String, fromNickname: String, text: String, textAsList: List<String>,
-                                      message: Message, handlerContext: HandlerContext) {
+    override fun handleChannelMessage(
+        connection: Connection, channel: String, fromNickname: String, text: String, textAsList: List<String>,
+        message: Message, handlerContext: HandlerContext
+    ) {
         if (Config.LOGD) Log.d(TAG, "handleChannelMessage")
         val frcCalendar = FrenchRevolutionaryCalendar(Locale.FRENCH, FrenchRevolutionaryCalendar.CalculationMethod.ROMME)
         val frcDate = frcCalendar.getDate(GregorianCalendar.getInstance() as GregorianCalendar)
-        val frenchDate = "Le ${frcDate.weekdayName} ${frcDate.dayOfMonth} ${frcDate.monthName} de l'an ${frcDate.year}. (${frcDate.objectTypeName} du jour : ${frcDate.dayOfYear})"
+        val frenchDate =
+            "Le ${frcDate.weekdayName} ${frcDate.dayOfMonth} ${frcDate.monthName} de l'an ${frcDate.year}. (${frcDate.objectTypeName} du jour : ${frcDate.objectOfTheDay})"
 
         try {
             connection.send(Command.PRIVMSG, channel, frenchDate)

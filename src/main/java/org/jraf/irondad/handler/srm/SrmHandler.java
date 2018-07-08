@@ -38,7 +38,8 @@ import org.jraf.irondad.protocol.Message;
 
 public class SrmHandler extends BaseHandler {
     private static final String NICKNAME = "srm";
-    private static final Pattern PATTERN_OSEF = Pattern.compile("(.*note\\s*4.*)|(.*n\\s*4.*)|(.*nexus.*)|(.*n\\s*6.*)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_OSEF =
+            Pattern.compile("(.*note\\s*4.*)|(.*n\\s*4.*)|(.*nexus.*)|(.*n\\s*6.*)|(.*essential.*)|(.*pixel.*)", Pattern.CASE_INSENSITIVE);
 
 
     @Override
@@ -52,7 +53,8 @@ public class SrmHandler extends BaseHandler {
             HandlerContext handlerContext) throws Exception {
         if (!fromNickname.toLowerCase(Locale.US).contains(NICKNAME.toLowerCase(Locale.US))) return;
         if (osef(text)) {
-            connection.send(Command.PRIVMSG, new String[] { channel, fromNickname + ": osef de ton Note 4 et/ou de ton Nexus 6[P]" });
+            connection.send(Command.PRIVMSG,
+                    new String[] {channel, fromNickname + ": osef de ton Note 4 et/ou de ton Nexus 6[P] et/ou de ton Essential et/ou de ton Pixel [1|2|XL]"});
         }
     }
 
