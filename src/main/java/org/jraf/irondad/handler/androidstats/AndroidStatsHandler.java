@@ -49,7 +49,7 @@ import org.jraf.irondad.util.Log;
 public class AndroidStatsHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + AndroidStatsHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "https://android-dot-google-developers.appspot.com/about/dashboards/index_71147ba33f30ba9017a0f8ca522ec1d6.frame";
+    private static final String URL_HTML = "https://android-dot-google-developers.appspot.com/about/dashboards/index_95cbf8a418417c3d65b22a91dd29d889.frame";
 
     private static class StatPoint implements Comparable<StatPoint> {
         public int apiLevel;
