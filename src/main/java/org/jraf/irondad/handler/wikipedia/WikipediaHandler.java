@@ -184,11 +184,10 @@ public class WikipediaHandler extends CommandHandler {
         if (Config.LOGD) Log.d(TAG, jsonStr);
 
         JSONObject jsonRoot = new JSONObject(jsonStr);
-        JSONObject jsonQuery = jsonRoot.getJSONObject("query");
-        JSONArray jsonPages = jsonQuery.getJSONArray("pages");
-        if (jsonPages.isEmpty()) {
-            return REPLY_NO_MATCH;
-        }
+        JSONObject jsonQuery = jsonRoot.optJSONObject("query");
+        if (jsonQuery == null) return url;
+        JSONArray jsonPages = jsonQuery.optJSONArray("pages");
+        if (jsonPages == null || jsonPages.isEmpty()) return url;
 
         JSONObject jsonPage = jsonPages.getJSONObject(0);
         String extract = jsonPage.getString("extract");
@@ -221,7 +220,8 @@ public class WikipediaHandler extends CommandHandler {
         url = url.substring(slashIdx + 1);
         try {
             url = URLDecoder.decode(url, "utf-8");
-        } catch (UnsupportedEncodingException ignored) {}
+        } catch (UnsupportedEncodingException ignored) {
+        }
         url = url.replace('_', ' ');
         url = url.toLowerCase(Locale.US);
         return url;
