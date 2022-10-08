@@ -26,11 +26,7 @@
  */
 package org.jraf.irondad.handler.commitstrip;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.github.kevinsawicki.http.HttpRequest;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -43,12 +39,15 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
-import com.github.kevinsawicki.http.HttpRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CommitstripHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + CommitstripHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "http://www.commitstrip.com/en/";
+    private static final String URL_HTML = "https://www.commitstrip.com/en/";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
@@ -59,7 +58,7 @@ public class CommitstripHandler extends CommandHandler {
 
     @Override
     protected void handleChannelMessage(final Connection connection, final String channel, String fromNickname, String text, List<String> textAsList,
-            Message message, HandlerContext handlerContext) throws Exception {
+                                        Message message, HandlerContext handlerContext) throws Exception {
         if (Config.LOGD) Log.d(TAG, "handleChannelMessage");
         final String param;
         if (textAsList.size() > 1) {
@@ -83,11 +82,8 @@ public class CommitstripHandler extends CommandHandler {
         if (param.equals("help")) {
             return "Options: [random|help]";
         }
-        String suffix = "";
         if (param.equals("random")) {
-            suffix = "random/";
-            String html = HttpRequest.get(URL_HTML + suffix).body();
-            return extractImgFromHtml(html);
+            return URL_HTML + "random/";
         }
 
         String html = HttpRequest.get(URL_HTML).body();
@@ -106,36 +102,7 @@ public class CommitstripHandler extends CommandHandler {
             return null;
         }
 
-        String href = a.attr("href");
-        if (href == null) {
-            return null;
-        }
-
-        html = HttpRequest.get(href).body();
-        if (Config.LOGD) Log.d(TAG, html);
-
-        return extractImgFromHtml(html);
-    }
-
-    private static String extractImgFromHtml(String html) {
-        if (Config.LOGD) Log.d(TAG, html);
-        Document doc = Jsoup.parse(html);
-
-        Element article = doc.select("article").first();
-        if (article == null) {
-            return null;
-        }
-        Element div = article.select("div.entry-content").first();
-        if (div == null) {
-            return null;
-        }
-        Element img = div.select("img").first();
-        if (img == null) {
-            return null;
-        }
-
-        String src = img.attr("src");
-        return src;
+        return a.attr("href");
     }
 
     public static void main(String[] av) {

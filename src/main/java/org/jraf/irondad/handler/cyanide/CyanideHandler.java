@@ -26,11 +26,7 @@
  */
 package org.jraf.irondad.handler.cyanide;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.github.kevinsawicki.http.HttpRequest;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -40,12 +36,15 @@ import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
 
-import com.github.kevinsawicki.http.HttpRequest;
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CyanideHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + CyanideHandler.class.getSimpleName();
 
-    private static final String URL_HTML = "http://explosm.net/comics/";
+    private static final String URL_HTML = "https://explosm.net/comics/latest";
 
     private final ExecutorService mThreadPool = Executors.newCachedThreadPool();
 
@@ -77,25 +76,15 @@ public class CyanideHandler extends CommandHandler {
     }
 
     private static String getResult(String param) {
-        if (param.equals("help")) {
-            return "Options: [random|number|help]";
-        }
-        String suffix = "latest/";
-        if (param.equals("random")) {
-            suffix = "random/";
-        } else if (param.matches("^-?\\d+$")) {
-            suffix = param + "/";
-        }
-
-        String html = HttpRequest.get(URL_HTML + suffix).body();
+        String html = HttpRequest.get(URL_HTML).followRedirects(true).body();
         if (Config.LOGD) Log.d(TAG, html);
-        String start = "<img id=\"main-comic\" src=\"";
+        String start = "<img src=\"";
         String end = "\"";
 
         html = html.substring(html.indexOf(start) + start.length());
         html = html.substring(0, html.indexOf(end));
         if (Config.LOGD) Log.d(TAG, html);
-        return "http:" + html;
+        return html;
     }
 
     public static void main(String[] av) {

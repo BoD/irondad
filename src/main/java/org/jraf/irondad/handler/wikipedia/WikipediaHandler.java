@@ -26,6 +26,25 @@
  */
 package org.jraf.irondad.handler.wikipedia;
 
+import com.github.kevinsawicki.http.HttpRequest;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.customsearch.Customsearch;
+import com.google.api.services.customsearch.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.model.Result;
+import com.google.api.services.customsearch.model.Search;
+import org.jraf.irondad.Config;
+import org.jraf.irondad.Constants;
+import org.jraf.irondad.handler.CommandHandler;
+import org.jraf.irondad.handler.HandlerContext;
+import org.jraf.irondad.protocol.Command;
+import org.jraf.irondad.protocol.Connection;
+import org.jraf.irondad.protocol.Message;
+import org.jraf.irondad.util.Log;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -35,26 +54,6 @@ import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.json.JSONArray;
-
-import com.github.kevinsawicki.http.HttpRequest;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.customsearch.Customsearch;
-import com.google.api.services.customsearch.CustomsearchRequestInitializer;
-import com.google.api.services.customsearch.model.Result;
-import com.google.api.services.customsearch.model.Search;
-
-import org.jraf.irondad.Config;
-import org.jraf.irondad.Constants;
-import org.jraf.irondad.handler.CommandHandler;
-import org.jraf.irondad.handler.HandlerContext;
-import org.jraf.irondad.protocol.Command;
-import org.jraf.irondad.protocol.Connection;
-import org.jraf.irondad.protocol.Message;
-import org.jraf.irondad.util.Log;
-
 public class WikipediaHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + WikipediaHandler.class.getSimpleName();
 
@@ -62,9 +61,8 @@ public class WikipediaHandler extends CommandHandler {
     private static final int MAX_LINE_LEN = 420;
 
     // Wikipedia url parts
-    private static final String URL_HTML = ".wikipedia.org/w/api.php?action=opensearch&search=";
+    private static final String URL_HTML = ".wikipedia.org/w/api.php?action=query&format=json&prop=extracts&generator=prefixsearch&redirects=1&converttitles=1&formatversion=2&exintro=1&explaintext=1&gpssearch=";
     private static final String DEFAULT_LOCALE = "en";
-    private static final String END_URL_HTML = "&limit=10&namespace=0&format=json";
 
     // Google search constants
     private static final String APPLICATION_NAME = "BoD-irondad/" + Constants.VERSION_NAME;
@@ -137,16 +135,19 @@ public class WikipediaHandler extends CommandHandler {
                     }
 
                     // First we query Google to get the right keywords
-                    String keywords = queryGoogle(handlerContext, finalParam);
-
+                    String[] linkAndResourceName = queryGoogle(handlerContext, finalParam);
                     // No keywords => no match
-                    if (keywords == null) {
+                    if (linkAndResourceName == null) {
                         connection.send(Command.PRIVMSG, channel, REPLY_NO_MATCH);
                         return;
                     }
 
+                    String link = linkAndResourceName[0];
+                    String keywords = linkAndResourceName[1];
+
+
                     keywords = URLEncoder.encode(keywords, "UTF-8");
-                    connection.send(Command.PRIVMSG, channel, getResult(keywords, locale));
+                    connection.send(Command.PRIVMSG, channel, getResult(keywords, link, locale));
                 } catch (IOException e) {
                     Log.e(TAG, "handleMessage Could not send to connection", e);
                 }
@@ -154,7 +155,7 @@ public class WikipediaHandler extends CommandHandler {
         });
     }
 
-    private String queryGoogle(HandlerContext handlerContext, String searchTerms) throws IOException {
+    private String[] queryGoogle(HandlerContext handlerContext, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
         Customsearch customsearch = getCustomsearch(handlerContext);
         Customsearch.Cse.List list = customsearch.cse().list(SEARCH_PREFIX + searchTerms);
@@ -171,52 +172,48 @@ public class WikipediaHandler extends CommandHandler {
 
         List<Result> searchResults = search.getItems();
         String link = searchResults.get(0).getLink();
-        link = getResourceNameFromUrl(link);
-        return link;
+        String resourceName = getResourceNameFromUrl(link);
+        return new String[]{link, resourceName};
     }
 
-    private static String getResult(String param, String locale) {
+    private static String getResult(String param, String url, String locale) {
         // Reconstruct wikipedia API url with the locale and keywords
-        String wikiUrl = "https://" + locale + URL_HTML + param + END_URL_HTML;
+        String wikiUrl = "https://" + locale + URL_HTML + param;
         if (Config.LOGD) Log.d(TAG, wikiUrl);
-        String json = HttpRequest.get(wikiUrl).body();
-        if (Config.LOGD) Log.d(TAG, json);
+        String jsonStr = HttpRequest.get(wikiUrl).body();
+        if (Config.LOGD) Log.d(TAG, jsonStr);
 
-        JSONArray result = new JSONArray(json);
-
-        String resultStr = result.getJSONArray(2).getString(0);
-        String url = result.getJSONArray(3).getString(0);
-
-        // No result no url => no match
-        if ((resultStr == null || resultStr.equals("")) && (url == null || url.equals(""))) {
+        JSONObject jsonRoot = new JSONObject(jsonStr);
+        JSONObject jsonQuery = jsonRoot.getJSONObject("query");
+        JSONArray jsonPages = jsonQuery.getJSONArray("pages");
+        if (jsonPages.isEmpty()) {
             return REPLY_NO_MATCH;
         }
 
-        if ((resultStr == null || resultStr.equals(""))) {
-            resultStr = result.getJSONArray(1).getString(0);
-        }
+        JSONObject jsonPage = jsonPages.getJSONObject(0);
+        String extract = jsonPage.getString("extract");
 
         // Let's truncate (if needed) to fill a whole IRC line (420 chars) with the text and the URL
         // +1 is for the space between the text and the url
         boolean tooLong = false;
-        if (resultStr.getBytes().length + (url.getBytes().length + 1) > MAX_LINE_LEN) {
+        if (extract.getBytes().length + (url.getBytes().length + 1) > MAX_LINE_LEN) {
             tooLong = true;
         }
 
         // +4 is for the space and the … char
         if (tooLong) {
-            while (resultStr.getBytes().length + (url.getBytes().length + 4) > MAX_LINE_LEN) {
-                resultStr = resultStr.substring(0, resultStr.length() - 1);
+            while (extract.getBytes().length + (url.getBytes().length + 4) > MAX_LINE_LEN) {
+                extract = extract.substring(0, extract.length() - 1);
             }
         }
 
         if (tooLong) {
-            resultStr += "… ";
+            extract += "… ";
         } else {
-            resultStr += " ";
+            extract += " ";
         }
 
-        return resultStr + url;
+        return extract + url;
     }
 
     private static String getResourceNameFromUrl(String url) {
