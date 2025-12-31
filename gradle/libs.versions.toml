@@ -1,0 +1,23 @@
+[versions]
+kotlin = "2.3.0"
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+
+[libraries]
+json = "org.json:json:20251224"
+sqlite-jdbc = "org.xerial:sqlite-jdbc:3.51.1.0"
+http-request = "com.github.kevinsawicki:http-request:6.0"
+google-api-services-customsearch = "com.google.apis:google-api-services-customsearch:v1-rev86-1.25.0"
+google-http-client-jackson2 = "com.google.http-client:google-http-client-jackson2:2.0.3"
+commons-lang3 = "org.apache.commons:commons-lang3:3.20.0"
+twitter4j-core = "org.twitter4j:twitter4j-core:4.0.7"
+##                                         ⬆ :4.1.0"
+##                                         ⬆ :4.1.1"
+##                                         ⬆ :4.1.2"
+guava = "com.google.guava:guava:33.5.0-jre"
+rome-fetcher = "org.rometools:rome-fetcher:1.2"
+google-api-services-urlshortener = "com.google.apis:google-api-services-urlshortener:v1-rev57-1.25.0"
+joda-time = "joda-time:joda-time:2.14.0"
+jsoup = "org.jsoup:jsoup:1.21.2"
+lib-french-revolutionary-calendar = "ca.rmen:lib-french-revolutionary-calendar:1.8.2"

@@ -1,7 +1,7 @@
 plugins {
     java
     `maven-publish`
-    kotlin("jvm")
+    alias(libs.plugins.kotlin.jvm)
 }
 
 repositories {
@@ -21,19 +21,19 @@ version = "1.11.2"
 description = "irondad"
 
 dependencies {
-    implementation("org.xerial:sqlite-jdbc:_")
-    implementation("com.github.kevinsawicki:http-request:_")
-    implementation("com.google.apis:google-api-services-customsearch:_")
-    implementation("com.google.http-client:google-http-client-jackson2:_")
-    implementation("org.apache.commons:commons-lang3:_")
-    implementation("org.twitter4j:twitter4j-core:_")
-    implementation("com.google.guava:guava:_")
-    implementation("org.rometools:rome-fetcher:_")
-    implementation("com.google.apis:google-api-services-urlshortener:_")
-    implementation("joda-time:joda-time:_")
-    implementation("org.jsoup:jsoup:_")
-    implementation("ca.rmen:lib-french-revolutionary-calendar:_")
-    api("org.json:json:_")
+    implementation(libs.sqlite.jdbc)
+    implementation(libs.http.request)
+    implementation(libs.google.api.services.customsearch)
+    implementation(libs.google.http.client.jackson2)
+    implementation(libs.commons.lang3)
+    implementation(libs.twitter4j.core)
+    implementation(libs.guava)
+    implementation(libs.rome.fetcher)
+    implementation(libs.google.api.services.urlshortener)
+    implementation(libs.joda.time)
+    implementation(libs.jsoup)
+    implementation(libs.lib.french.revolutionary.calendar)
+    api(libs.json)
 }
 
 publishing {
