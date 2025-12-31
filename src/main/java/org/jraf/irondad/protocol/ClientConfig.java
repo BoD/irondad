@@ -25,18 +25,17 @@
  */
 package org.jraf.irondad.protocol;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import org.jraf.irondad.handler.Handler;
+import org.jraf.irondad.handler.HandlerConfig;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.jraf.irondad.handler.Handler;
-import org.jraf.irondad.handler.HandlerConfig;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 
 public class ClientConfig {
     public static class HandlerClassAndConfig {
@@ -51,12 +50,20 @@ public class ClientConfig {
     private final Map<String, HandlerClassAndConfig> mHandlerConfigs = new HashMap<String, HandlerClassAndConfig>();
     private final List<String> mPrivmsgHandlerConfigNames = new ArrayList<String>();
     private final ListMultimap<String, String> mChannelHandlerConfigNames = ArrayListMultimap.create();
+    private final String mSaslUsername;
+    private final String mSaslPassword;
 
     public ClientConfig(String host, int port, String nickname, String adminPassword) {
+        this(host, port, nickname, adminPassword, null, null);
+    }
+
+    public ClientConfig(String host, int port, String nickname, String adminPassword, String saslUsername, String saslPassword) {
         mHost = host;
         mPort = port;
         mNickname = nickname;
         mAdminPassword = adminPassword;
+        mSaslUsername = saslUsername;
+        mSaslPassword = saslPassword;
     }
 
     public String getHost() {
@@ -77,6 +84,14 @@ public class ClientConfig {
 
     public String getAdminPassword() {
         return mAdminPassword;
+    }
+
+    public String getSaslUsername() {
+        return mSaslUsername;
+    }
+
+    public String getSaslPassword() {
+        return mSaslPassword;
     }
 
     public void addHandlerConfig(String configName, Class<? extends Handler> handlerClass, HandlerConfig handlerConfig) {
