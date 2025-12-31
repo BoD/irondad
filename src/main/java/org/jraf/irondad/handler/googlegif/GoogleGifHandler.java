@@ -25,12 +25,13 @@
  */
 package org.jraf.irondad.handler.googlegif;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.customsearch.v1.Customsearch;
+import com.google.api.services.customsearch.v1.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.v1.model.Result;
+import com.google.api.services.customsearch.v1.model.Search;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -40,13 +41,11 @@ import org.jraf.irondad.protocol.Connection;
 import org.jraf.irondad.protocol.Message;
 import org.jraf.irondad.util.Log;
 
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.customsearch.Customsearch;
-import com.google.api.services.customsearch.CustomsearchRequestInitializer;
-import com.google.api.services.customsearch.model.Result;
-import com.google.api.services.customsearch.model.Search;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GoogleGifHandler extends CommandHandler {
     private static final String TAG = Constants.TAG + GoogleGifHandler.class.getSimpleName();
@@ -117,13 +116,13 @@ public class GoogleGifHandler extends CommandHandler {
     private long queryGoogle(HandlerContext handlerContext, Connection connection, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
         Customsearch customsearch = getCustomsearch(handlerContext);
-        Customsearch.Cse.List list = customsearch.cse().list(searchTerms);
+        Customsearch.Cse.List list = customsearch.cse().list().setExactTerms(searchTerms);
         String cx = ((GoogleGifHandlerConfig) handlerContext.getHandlerConfig()).getCx();
         list.setCx(cx);
         list.setSearchType("image");
         list.setFileType("gif");
         list.setFields("items/link,searchInformation/totalResults");
-        list.setNum((long) RESULT_SIZE);
+        list.setNum(RESULT_SIZE);
         //        list.setStart((long) mGuessCount + 1);
 
         // Execute the query
@@ -131,7 +130,7 @@ public class GoogleGifHandler extends CommandHandler {
 
         mSearchResults = search.getItems();
 
-        return search.getSearchInformation().getTotalResults();
+        return Long.parseLong(search.getSearchInformation().getTotalResults());
     }
 
     private Customsearch getCustomsearch(HandlerContext handlerContext) {

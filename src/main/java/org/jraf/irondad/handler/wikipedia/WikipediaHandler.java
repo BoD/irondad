@@ -30,10 +30,10 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
-import com.google.api.services.customsearch.Customsearch;
-import com.google.api.services.customsearch.CustomsearchRequestInitializer;
-import com.google.api.services.customsearch.model.Result;
-import com.google.api.services.customsearch.model.Search;
+import com.google.api.services.customsearch.v1.Customsearch;
+import com.google.api.services.customsearch.v1.CustomsearchRequestInitializer;
+import com.google.api.services.customsearch.v1.model.Result;
+import com.google.api.services.customsearch.v1.model.Search;
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.CommandHandler;
@@ -158,17 +158,17 @@ public class WikipediaHandler extends CommandHandler {
     private String[] queryGoogle(HandlerContext handlerContext, String searchTerms) throws IOException {
         if (Config.LOGD) Log.d(TAG, "queryGoogle searchTerms=" + searchTerms);
         Customsearch customsearch = getCustomsearch(handlerContext);
-        Customsearch.Cse.List list = customsearch.cse().list(SEARCH_PREFIX + searchTerms);
+        Customsearch.Cse.List list = customsearch.cse().list().setExactTerms(SEARCH_PREFIX + searchTerms);
         String cx = ((WikipediaHandlerConfig) handlerContext.getHandlerConfig()).getCx();
         list.setCx(cx);
         list.setFields("items/link,searchInformation/totalResults");
-        list.setNum((long) RESULT_SIZE);
+        list.setNum(RESULT_SIZE);
 
         // Execute the query
         Search search = list.execute();
 
-        Long totalResults = search.getSearchInformation().getTotalResults();
-        if (totalResults == null || totalResults == 0) return null;
+        long totalResults = Long.parseLong(search.getSearchInformation().getTotalResults());
+        if (totalResults == 0) return null;
 
         List<Result> searchResults = search.getItems();
         String link = searchResults.get(0).getLink();

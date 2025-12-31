@@ -33,7 +33,6 @@ dependencies {
     implementation("joda-time:joda-time:_")
     implementation("org.jsoup:jsoup:_")
     implementation("ca.rmen:lib-french-revolutionary-calendar:_")
-    implementation(Kotlin.stdlib.jdk8)
     api("org.json:json:_")
 }
 
