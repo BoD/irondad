@@ -25,9 +25,9 @@
  */
 package org.jraf.irondad.protocol;
 
-import java.util.HashMap;
-
 import org.apache.commons.lang3.StringUtils;
+
+import java.util.HashMap;
 
 public enum Command {
     //@formatter:off
@@ -45,6 +45,8 @@ public enum Command {
     PRIVMSG,
     NAMES,
     QUIT,
+    CAP,
+    AUTHENTICATE,
     
     UNKNOWN, 
     
@@ -56,6 +58,13 @@ public enum Command {
     RPL_WELCOME(1),
     
     RPL_NAMREPLY(353),
+    RPL_LOGGEDIN(900),
+    RPL_SASLSUCCESS(903),
+    ERR_SASLFAIL(904),
+    ERR_SASLTOOLONG(905),
+    ERR_SASLABORTED(906),
+    ERR_SASLALREADY(907),
+    RPL_SASLMECHS(908),
     
     ERR_ERRONEUSNICKNAME(432),
     ERR_NICKNAMEINUSE(433),

@@ -25,17 +25,19 @@
  */
 package org.jraf.irondad.protocol;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import org.jraf.irondad.Config;
 import org.jraf.irondad.Constants;
 import org.jraf.irondad.handler.HandlerManager;
 import org.jraf.irondad.util.Log;
+
+import java.io.IOException;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static final String TAG = Constants.TAG + Client.class.getSimpleName();
@@ -53,6 +55,8 @@ public class Client {
     private volatile boolean mStopRequested;
     private HandlerManager mHandlerManager;
     private boolean mJoinChannelsScheduled;
+    private boolean mSaslRequested;
+    private boolean mCapEndSent;
 
     public Client(ClientConfig clientConfig) {
         mClientConfig = clientConfig;
@@ -141,8 +145,22 @@ public class Client {
 
     private void register() throws IOException {
         if (Config.LOGD) Log.d(TAG, "register");
+        resetCapabilityState();
+        if (isSaslConfigured()) {
+            mSaslRequested = true;
+            send(Command.CAP, "REQ", "sasl");
+        }
         nick(mClientConfig.getNickname());
         send(Command.USER, mClientConfig.getNickname(), "0", "*", ABOUT);
+    }
+
+    private void resetCapabilityState() {
+        mSaslRequested = false;
+        mCapEndSent = false;
+    }
+
+    private boolean isSaslConfigured() {
+        return mClientConfig.getSaslUsername() != null && !mClientConfig.getSaslUsername().isEmpty() && mClientConfig.getSaslPassword() != null && !mClientConfig.getSaslPassword().isEmpty();
     }
 
     private void nick(String nickname) throws IOException {
@@ -203,6 +221,14 @@ public class Client {
 
     protected void handleMessage(Message message) throws IOException {
         switch (message.command) {
+            case CAP:
+                handleCap(message);
+                break;
+
+            case AUTHENTICATE:
+                handleAuthenticate(message);
+                break;
+
             case RPL_WELCOME:
                 mRegistered = true;
                 scheduleJoinChannels();
@@ -210,6 +236,19 @@ public class Client {
 
             case RPL_NAMREPLY:
                 gainOpIfNecessary(message);
+                break;
+
+            case RPL_LOGGEDIN:
+            case RPL_SASLSUCCESS:
+                handleSaslSuccess();
+                break;
+
+            case ERR_SASLFAIL:
+            case ERR_SASLTOOLONG:
+            case ERR_SASLABORTED:
+            case ERR_SASLALREADY:
+            case RPL_SASLMECHS:
+                handleSaslFailure(message);
                 break;
 
             case ERR_ERRONEUSNICKNAME:
@@ -272,6 +311,50 @@ public class Client {
         String fromNickname = message.origin.name;
         String text = message.parameters.get(1);
         mHandlerManager.handle(channel, fromNickname, text, message);
+    }
+
+    private void handleCap(Message message) throws IOException {
+        if (!mSaslRequested) return;
+        if (message.parameters.size() < 2) return;
+        String subCommand = message.parameters.get(1);
+        if ("ACK".equalsIgnoreCase(subCommand)) {
+            if (message.parameters.size() >= 3 && message.parameters.get(2).toLowerCase().contains("sasl")) {
+                send(Command.AUTHENTICATE, "PLAIN");
+            } else {
+                finishCapNegotiation();
+            }
+        } else if ("NAK".equalsIgnoreCase(subCommand)) {
+            Log.w(TAG, "handleCap SASL capability not acknowledged");
+            finishCapNegotiation();
+        }
+    }
+
+    private void handleAuthenticate(Message message) throws IOException {
+        if (!mSaslRequested) return;
+        if (message.parameters.isEmpty()) return;
+        if ("+".equals(message.parameters.get(0))) {
+            String authPayload = "\0" + mClientConfig.getSaslUsername() + "\0" + mClientConfig.getSaslPassword();
+            String encoded = Base64.getEncoder().encodeToString(authPayload.getBytes(StandardCharsets.UTF_8));
+            send(Command.AUTHENTICATE, encoded);
+        }
+    }
+
+    private void handleSaslSuccess() throws IOException {
+        if (!mSaslRequested) return;
+        finishCapNegotiation();
+    }
+
+    private void handleSaslFailure(Message message) throws IOException {
+        if (!mSaslRequested) return;
+        Log.w(TAG, "handleSaslFailure command=" + message.command);
+        finishCapNegotiation();
+    }
+
+    private void finishCapNegotiation() throws IOException {
+        if (mSaslRequested && !mCapEndSent) {
+            send(Command.CAP, "END");
+            mCapEndSent = true;
+        }
     }
 
 
